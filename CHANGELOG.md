@@ -29,3 +29,9 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Documentação completa do sistema (HTML estilizado + Markdown)
 - Barra de título customizada (frameless)
 - Tema escuro estilo Steam (#1b2838, #a4d007, #66c0f4)
+- Design responsivo completo:
+  - Sidebar colapsável com hamburger menu (auto < 768px)
+  - Library grid de 2-6 colunas conforme largura
+  - GameDetail com hero banner responsivo
+  - GameCard com hover overlay sem corte
+  - Todos os componentes com breakpoints sm:/md:/lg:

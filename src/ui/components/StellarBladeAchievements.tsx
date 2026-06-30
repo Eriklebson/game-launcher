@@ -72,16 +72,16 @@ export default function StellarBladeAchievements({ gameId }: StellarBladeAchieve
 
   if (!hasSave) {
     return (
-      <div className="bg-steam-card rounded-lg p-5">
-        <div className="flex items-center gap-3 mb-4">
-          <FiAward className="text-steam-text/30" size={20} />
-          <h2 className="text-lg font-semibold text-steam-light">Stellar Blade Achievements</h2>
+      <div className="bg-steam-card/60 backdrop-blur-sm rounded-xl p-4 sm:p-5 border border-white/[0.03]">
+        <div className="flex items-center gap-2.5 sm:gap-3 mb-3 sm:mb-4">
+          <FiAward className="text-steam-text/30" size={18} />
+          <h2 className="text-base sm:text-lg font-semibold text-steam-light">Stellar Blade Achievements</h2>
         </div>
-        <div className="text-center py-8">
-          <p className="text-sm text-steam-text/50">
+        <div className="text-center py-6 sm:py-8">
+          <p className="text-xs sm:text-sm text-steam-text/50">
             Save do Stellar Blade não encontrado.
           </p>
-          <p className="text-xs text-steam-text/30 mt-2">
+          <p className="text-[10px] sm:text-xs text-steam-text/30 mt-2">
             Certifique-se de que o jogo está instalado e já foi aberto pelo menos uma vez.
           </p>
         </div>
@@ -94,32 +94,32 @@ export default function StellarBladeAchievements({ gameId }: StellarBladeAchieve
   const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
 
   return (
-    <div className="bg-steam-card rounded-lg p-5">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-steam-light flex items-center gap-2">
+    <div className="bg-steam-card/60 backdrop-blur-sm rounded-xl p-4 sm:p-5 border border-white/[0.03] animate-fade-in">
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <h2 className="text-base sm:text-lg font-semibold text-steam-light flex items-center gap-2">
           <FiAward className="text-steam-blue" />
           Stellar Blade Achievements
         </h2>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-steam-text/60">
+          <span className="text-xs sm:text-sm text-steam-text/60">
             {completedCount}/{totalCount}
           </span>
           <button
             onClick={loadSave}
             disabled={loading}
-            className="p-1.5 rounded hover:bg-white/10 transition-colors"
+            className="p-1 sm:p-1.5 rounded hover:bg-white/10 transition-colors"
             title="Atualizar"
           >
-            <FiRefreshCw size={14} className={`text-steam-text/40 ${loading ? 'animate-spin' : ''}`} />
+            <FiRefreshCw size={13} className={`text-steam-text/40 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
 
       {/* Progress bar */}
-      <div className="mb-4">
+      <div className="mb-3 sm:mb-4">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-xs text-steam-text/40">Progresso</span>
-          <span className="text-xs font-medium text-steam-blue">{progress}%</span>
+          <span className="text-[10px] sm:text-xs text-steam-text/40">Progresso</span>
+          <span className="text-[10px] sm:text-xs font-medium text-steam-blue">{progress}%</span>
         </div>
         <div className="w-full h-2 bg-steam-darker rounded-full overflow-hidden">
           <div
@@ -130,16 +130,16 @@ export default function StellarBladeAchievements({ gameId }: StellarBladeAchieve
       </div>
 
       {loading && !saveData ? (
-        <div className="flex items-center justify-center py-8 gap-3">
-          <div className="w-5 h-5 border-2 border-steam-blue border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm text-steam-text/60">Lendo save...</span>
+        <div className="flex items-center justify-center py-6 sm:py-8 gap-3">
+          <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-steam-blue border-t-transparent rounded-full animate-spin" />
+          <span className="text-xs sm:text-sm text-steam-text/60">Lendo save...</span>
         </div>
       ) : error ? (
-        <div className="text-center py-8">
-          <p className="text-sm text-red-400">{error}</p>
+        <div className="text-center py-6 sm:py-8">
+          <p className="text-xs sm:text-sm text-red-400">{error}</p>
           <button
             onClick={loadSave}
-            className="mt-3 px-4 py-2 bg-steam-blue/20 hover:bg-steam-blue/30 text-steam-blue rounded text-sm font-medium transition-colors"
+            className="mt-3 px-3 sm:px-4 py-1.5 sm:py-2 bg-steam-blue/20 hover:bg-steam-blue/30 text-steam-blue rounded-lg text-xs sm:text-sm font-medium transition-colors"
           >
             Tentar novamente
           </button>
@@ -147,25 +147,25 @@ export default function StellarBladeAchievements({ gameId }: StellarBladeAchieve
       ) : saveData ? (
         <>
           {/* Save info */}
-          <div className="flex items-center gap-4 mb-4 text-xs text-steam-text/40">
+          <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4 text-[10px] sm:text-xs text-steam-text/40">
             <span className="flex items-center gap-1">
-              <FiDatabase size={12} />
+              <FiDatabase size={10} />
               Steam ID: {saveData.steamId}
             </span>
             <span>NG+: {saveData.newGamePlusCount}</span>
           </div>
 
           {/* Trophy grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-96 overflow-auto pr-1">
+          <div className="grid grid-cols-1 gap-1.5 sm:gap-2 max-h-96 overflow-auto pr-1">
             {saveData.trophies.map((trophy) => (
               <TrophyCard key={trophy.name} trophy={trophy} />
             ))}
           </div>
 
           {/* Endings section */}
-          <div className="mt-4 pt-4 border-t border-white/5">
-            <h3 className="text-sm font-semibold text-steam-light mb-2">Endings</h3>
-            <div className="flex flex-wrap gap-2">
+          <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-white/5">
+            <h3 className="text-xs sm:text-sm font-semibold text-steam-light mb-2">Endings</h3>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               <EndingBadge label="Making New Memories" unlocked={saveData.endings.killElder} />
               <EndingBadge label="Cost of Lost Memories" unlocked={saveData.endings.killLily} />
               <EndingBadge label="Return to the Colony" unlocked={saveData.endings.saveLily} />
@@ -180,28 +180,28 @@ export default function StellarBladeAchievements({ gameId }: StellarBladeAchieve
 function TrophyCard({ trophy }: { trophy: StellarBladeTrophy }) {
   return (
     <div
-      className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+      className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg transition-colors ${
         trophy.bCompleted
           ? 'bg-steam-blue/10 border border-steam-blue/20'
           : 'bg-steam-darker/50 opacity-50'
       }`}
     >
-      <div className={`w-10 h-10 rounded flex items-center justify-center flex-shrink-0 text-lg ${
+      <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 text-base sm:text-lg ${
         trophy.bCompleted ? 'bg-steam-blue/20' : 'bg-white/5'
       }`}>
         {TROPHY_ICONS[trophy.name] || '🏅'}
       </div>
       <div className="flex-1 min-w-0">
-        <p className={`text-sm truncate ${trophy.bCompleted ? 'text-steam-light' : 'text-steam-text/50'}`}>
+        <p className={`text-xs sm:text-sm truncate ${trophy.bCompleted ? 'text-steam-light' : 'text-steam-text/50'}`}>
           {trophy.steamAchievement}
         </p>
-        <p className="text-xs text-steam-text/30 truncate">{trophy.name}</p>
+        <p className="text-[9px] sm:text-[10px] text-steam-text/30 truncate">{trophy.name}</p>
       </div>
       <div className="flex-shrink-0">
         {trophy.bCompleted ? (
-          <FiCheck size={16} className="text-steam-green" />
+          <FiCheck size={14} className="text-steam-green" />
         ) : (
-          <FiX size={16} className="text-steam-text/20" />
+          <FiX size={14} className="text-steam-text/20" />
         )}
       </div>
     </div>
@@ -210,7 +210,7 @@ function TrophyCard({ trophy }: { trophy: StellarBladeTrophy }) {
 
 function EndingBadge({ label, unlocked }: { label: string; unlocked: boolean }) {
   return (
-    <span className={`text-xs px-2 py-1 rounded ${
+    <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md ${
       unlocked
         ? 'bg-steam-green/20 text-steam-green border border-steam-green/30'
         : 'bg-white/5 text-steam-text/30 border border-white/5'

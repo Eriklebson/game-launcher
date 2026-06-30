@@ -1,75 +1,98 @@
-============================================================
+===========================================================
   GAME LAUNCHER - RESUMO DE MUDANÇAS
   Última atualização: 30/06/2026
-============================================================
+===========================================================
 
 MUDANÇAS NESTA SESSÃO:
 ----------------------
 
-1. REMOVIDO: Sistema de Steam API Config
-   - Deletado: src/ui/pages/Settings.tsx (página de configurações)
-   - Deletado: src/ui/components/AchievementsPanel.tsx (componente órfão)
-   - Removido de main.ts:
-     * STEAM_CONFIG_PATH constant
-     * SteamConfig interface
-     * loadSteamConfig() / saveSteamConfig()
-     * fetchSteamAchievements() (usava API key)
-     * IPC handlers: get-steam-config, save-steam-config, get-achievements
-   - Removido de preload.ts:
-     * getSteamConfig, saveSteamConfig, getAchievements
-   - Removido de types/index.ts:
-     * SteamConfig interface
-     * getSteamConfig, saveSteamConfig, getAchievements do ElectronAPI
-   - Removido de App.tsx:
-     * Import e renderização de Settings
-     * onNavigateSettings do GameDetail
-   - Removido de Sidebar.tsx:
-     * Botão "Configurações" e FiSettings icon
-     * 'settings' do Page type
-   - Removido de GameDetail.tsx:
-     * onNavigateSettings prop
-     * achievements state (API)
-     * loadingAchievements state
-     * loadAchievements function
-     * Botão "Configurar Steam API"
-     * Botão "Buscar conquistas da Steam"
+1. RESPONSIVIDADE - AJUSTES COMPLETOS:
 
-2. MANTIDO:
-   - get-cached-achievements (lê do DB)
-   - get-steam-store-info (não precisa de API key)
-   - Stellar Blade parser (ler save)
-   - Todas as funcionalidades de scanner, play time, etc.
+   a) Sidebar (Sidebar.tsx):
+      - Menu colapsável com botão hamburger
+      - Auto-colapsa abaixo de 768px (mobile)
+      - Overlay escuro + sidebar fixa no mobile
+      - Botão X para fechar
+      - Estado collapsed com useState
 
-3. DOCUMENTAÇÃO CRIADA:
-   - docs/SISTEMA-COMPLETO.md — Documentação completa do sistema
-   - docs/SISTEMA-RESUMO.txt — Este arquivo
-   - docs/stellar-blade-parser.md — Parser do Stellar Blade
-   - AGENTS.md — Atualizado com informações do parser
+   b) Library (Library.tsx):
+      - Header empilha verticalmente em mobile
+      - Search ocupa largura total no mobile
+      - Grid responsivo: 2 → 6 colunas
+      - Spacing e fontes escalonados (sm:, md:)
+
+   c) GameCard (GameCard.tsx):
+      - Hover overlay FORA da área de imagem
+      - Overflow visível no card (overflow-visible)
+      - Botões menores em mobile (text-[10px] sm:text-xs)
+      - Badge de plataforma responsivo
+      - Correção: botões não são mais cortados
+
+   d) GameDetail (GameDetail.tsx):
+      - Hero banner responsivo: h-56 sm:h-64 md:h-80
+      - Capa oculta em sm:hidden
+      - Título responsivo: text-xl sm:text-2xl md:text-4xl
+      - Grid sidebar empilha em mobile
+      - Screenshots thumbnails responsivos
+      - Todos os elementos com sm:/md: prefixes
+
+   e) TitleBar (TitleBar.tsx):
+      - Altura: h-8 sm:h-9
+      - Botões: w-9 sm:w-11
+      - Título: text-[10px] sm:text-xs
+
+   f) StellarBladeAchievements (StellarBladeAchievements.tsx):
+      - Todos os elementos responsivos
+      - Padding e gaps escalonados
+
+   g) AddGame (AddGame.tsx):
+      - Formulário responsivo
+      - Inputs e botões escalonados
+
+2. GAMECARD - CORREÇÃO DE BOTÕES CORTADOS:
+   - Problema: Botões (Jogar, Detalhes, Apagar) ficavam cortados
+     porque estavam dentro do div com overflow-hidden
+   - Solução: Movidos para fora da área de imagem, dentro do card
+     com overflow-visible
+   - Resultado: Botões aparecem completamente em qualquer tamanho
+
+3. DOCUMENTAÇÃO ATUALIZADA:
+   - SISTEMA-COMPLETO.md: Adicionada seção 7.1 Design Responsivo
+   - SISTEMA-RESUMO.txt: Este arquivo
+   - AGENTS.md: Adicionada seção Responsive Design
 
 ARQUIVOS ATUAIS:
 ----------------
 
 src/electron/
-  main.ts           → Processo principal (308 linhas)
-  preload.ts        → Context bridge (20 linhas)
-  database.ts       → SQLite CRUD (270 linhas)
-  gameScanner.ts    → Scanner multi-plataforma (673 linhas)
+  main.ts           → Processo principal
+  preload.ts        → Context bridge
+  database.ts       → SQLite CRUD
+  gameScanner.ts    → Scanner multi-plataforma
   stellarBladeParser.ts → Parser save Stellar Blade
 
 src/ui/
   App.tsx           → Roteamento principal
   components/
-    TitleBar.tsx    → Barra de título customizada
-    Sidebar.tsx     → Menu lateral
-    GameCard.tsx    → Card de jogo
+    TitleBar.tsx    → Barra de título (responsiva)
+    Sidebar.tsx     → Menu lateral (colapsável)
+    GameCard.tsx    → Card de jogo (hover overlay corrigido)
     StellarBladeAchievements.tsx → Conquistas do save
   pages/
-    Library.tsx     → Biblioteca (grid/lista)
-    GameDetail.tsx  → Detalhe do jogo
-    AddGame.tsx     → Adicionar jogo manual
+    Library.tsx     → Biblioteca (grid responsivo)
+    GameDetail.tsx  → Detalhe do jogo (responsivo)
+    AddGame.tsx     → Adicionar jogo (responsivo)
 
 src/types/
   index.ts          → Interfaces TypeScript
+
+BREAKPOINTS TAILWIND:
+---------------------
+sm: 640px   → Celulares grandes
+md: 768px   → Tablets
+lg: 1024px  → Desktops pequenos
+xl: 1280px  → Desktops
+2xl: 1536px → Telas grandes
 
 IPC HANDLERS ATUAIS:
 --------------------

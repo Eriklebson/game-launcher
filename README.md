@@ -23,20 +23,9 @@
 | ⏱️ **Play Time Tracking** | Registra tempo de jogo por sessão automaticamente |
 | 🖼️ **Detalhe do Jogo** | Screenshots, descrição, requisitos do sistema (via Steam Store API) |
 | 🏆 **Conquistas** | Sistema de conquistas via banco de dados local |
-| ⚔️ **Stellar Blade** | Parser de save para extrair conquistas sem Steam API |
 | 🛠️ **Mods & Tools** | Aba separada para ferramentas de modding |
 | 🎯 **Badge de Plataforma** | Identifica Steam, Epic, Xbox, GOG com cores específicas |
 | 📦 **100% Offline** | Banco de dados SQLite local, sem dependência de nuvem |
-
----
-
-## 📸 Screenshots
-
-<div align="center">
-
-![Game Launcher](https://img.shields.io/badge/Em breve-screenshots-blueviolet)
-
-</div>
 
 ---
 
@@ -81,8 +70,7 @@ game-launcher/
 │   │   ├── main.ts            # Entry point, janela, IPC, DB
 │   │   ├── preload.ts         # Context bridge
 │   │   ├── database.ts        # SQLite CRUD
-│   │   ├── gameScanner.ts     # Scanner multi-plataforma
-│   │   └── stellarBladeParser.ts  # Parser save (READ ONLY)
+│   │   └── gameScanner.ts     # Scanner multi-plataforma
 │   ├── ui/                    # Renderer process (React)
 │   │   ├── App.tsx            # Roteamento principal
 │   │   ├── components/        # Componentes reutilizáveis
@@ -133,16 +121,6 @@ Capas buscadas via **Steam Store API** (gratuita, sem autenticação).
 
 ---
 
-## ⚔️ Stellar Blade Parser
-
-Sistema dedicado para extrair conquistas do Stellar Blade lendo o save binário:
-
-- **Formato**: UE4 binary (header "EVAS", Release 4.26)
-- **Dados**: 25 trophy flags, endings, quests, NG+ count
-- **Segurança**: APENAS leitura — nunca modifica o save
-
----
-
 ## 📋 Versão
 
 | Versão | Data | Mudança |
@@ -150,16 +128,6 @@ Sistema dedicado para extrair conquistas do Stellar Blade lendo o save binário:
 | 1.0.0 | 30/06/2026 | Release inicial |
 
 Ver [CHANGELOG.md](CHANGELOG.md) para histórico completo.
-
----
-
-## 🤝 Contribuição
-
-1. Fork o projeto
-2. Crie uma branch (`git checkout -b feature/nova-feature`)
-3. Commit suas mudanças (`git commit -m 'Adiciona nova feature'`)
-4. Push para a branch (`git push origin feature/nova-feature`)
-5. Abra um Pull Request
 
 ---
 

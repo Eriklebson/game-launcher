@@ -247,8 +247,9 @@ hasStellarBladeSave, parseStellarBladeSave
 
 #### GameCard.tsx
 - Card clicável com: capa, nome, badge de plataforma (dropdown), data último jogo
-- Ações hover: Play, Detalhes, Deletar
+- Hover overlay com ações: Jogar, Detalhes, Deletar (fora da área de imagem para não cortar)
 - Dropdown de plataforma: permite reatribuir manualmente
+- Overflow visível no card para que os botões hover não sejam cortados
 
 #### StellarBladeAchievements.tsx
 - Detecta save do Stellar Blade automaticamente
@@ -276,6 +277,66 @@ hasStellarBladeSave, parseStellarBladeSave
 
 #### AddGame.tsx
 - Formulário manual: nome, executável (file picker), imagem (file picker), plataforma
+
+---
+
+## 7.1 Design Responsivo
+
+### Breakpoints (Tailwind v3)
+| Prefixo | Largura | Uso |
+|---------|---------|-----|
+| `sm:` | 640px+ | Celulares grandes |
+| `md:` | 768px+ | Tablets |
+| `lg:` | 1024px+ | Desktops pequenos |
+| `xl:` | 1280px+ | Desktops |
+| `2xl:` | 1536px+ | Telas grandes |
+
+### Sidebar (Sidebar.tsx)
+- **Desktop (>768px)**: Visível permanentemente, largura 220px
+- **Mobile (<768px)**: Auto-colapsa, botão hamburger fixo no topo
+- Overlay escuro quando aberta no mobile
+- Botão X para fechar
+
+### Library (Library.tsx)
+- **Grid**: `grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6`
+- Header: empilha verticalmente em mobile (`flex-col sm:flex-row`)
+- Search: largura total em mobile, fixa em desktop (`w-full sm:w-56`)
+- Spacing: `p-3 sm:p-4 md:p-6`
+
+### GameCard (GameCard.tsx)
+- **Hover overlay**: Fora da área de imagem (evita corte por `overflow-hidden`)
+- Botões menores em mobile: `text-[10px] sm:text-xs`, `px-2 py-1.5 sm:px-3 sm:py-2`
+- Badge de plataforma: `text-[10px] sm:text-[11px]`
+- Card inteiro: `overflow-visible` para permitir que hover overlay transborde
+
+### GameDetail (GameDetail.tsx)
+- **Hero banner**: `h-56 sm:h-64 md:h-80`
+- **Capa**: Oculta em `sm:hidden`, visível a partir de `md`
+- **Título**: `text-xl sm:text-2xl md:text-4xl`
+- **Botão Jogar**: `px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-3.5`
+- **Grid conteúdo**: `grid-cols-1 lg:grid-cols-3` (sidebar empilha em mobile)
+- **Screenshots thumbnails**: `w-20 h-14 sm:w-28 sm:h-18 md:w-32 md:h-20`
+- **Conquistas**: `grid-cols-1` (sempre vertical para melhor leitura)
+
+### TitleBar (TitleBar.tsx)
+- Altura: `h-8 sm:h-9`
+- Botões de janela: `w-9 sm:w-11`
+- Título: `text-[10px] sm:text-xs`
+
+### StellarBladeAchievements (StellarBladeAchievements.tsx)
+- Todos os elementos com tamanhos responsivos (`text-[10px] sm:text-xs`)
+- Padding e gaps escalonados
+
+### AddGame (AddGame.tsx)
+- Formulário: padding `p-3 sm:p-4 md:p-6`
+- Inputs: `py-2 sm:py-2.5 text-sm`
+- Botões: `text-xs sm:text-sm`
+
+### CSS Customizado (global.css)
+- Animações: `fadeIn`, `slideIn`, `pulse-soft`, `shimmer`
+- Efeitos: `glass`, `glow-blue`, `glow-green`
+- Scrollbar styling
+- Focus visível com outline azul
 
 ---
 

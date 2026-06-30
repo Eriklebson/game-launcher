@@ -31,7 +31,7 @@ Personal Steam-like desktop game launcher built with Electron + React + Vite + T
 - `pages/GameDetail.tsx` - Steam-like game detail (screenshots, achievements, sys requirements)
 - `pages/AddGame.tsx` - Manual game addition form
 - `components/GameCard.tsx` - Clickable game card with platform badge dropdown
-- `components/Sidebar.tsx` - Navigation sidebar with game counts
+- `components/Sidebar.tsx` - Navigation sidebar with game counts, collapsible on mobile (<768px)
 - `components/TitleBar.tsx` - Custom frameless window title bar
 - `components/StellarBladeAchievements.tsx` - Stellar Blade save-based achievements
 
@@ -101,6 +101,13 @@ CREATE TABLE play_sessions (
 - BoolProperty offset: name + 21 bytes (13 "BoolProperty\0" + 4 size + 4 arrayIndex)
 - UInt32Property offset: name + 23 bytes (15 "UInt32Property\0" + 4 size + 4 arrayIndex)
 - Documentation: `docs/stellar-blade-save-format.md`, `docs/stellar-blade-parser.md`
+
+## Responsive Design
+- **Sidebar**: Collapsible with hamburger toggle. Auto-collapses below 768px. Uses `fixed` positioning on mobile with overlay.
+- **Library grid**: `grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6`
+- **GameDetail hero**: Height adjusts `h-56 sm:h-64 md:h-80`. Cover hidden on `sm:hidden`.
+- **All components**: Use `sm:`, `md:` prefixes for padding, font sizes, gaps, and spacing.
+- **Tailwind breakpoints**: Default v3 breakpoints (sm:640px, md:768px, lg:1024px, xl:1280px, 2xl:1536px)
 
 ## Important Notes
 - Xbox game names: Package names (e.g., `Microsoft.ForteBaseGame`) are NOT display names; read `AppxManifest.xml` `<DisplayName>` instead

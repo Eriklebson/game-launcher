@@ -11,12 +11,12 @@ interface GameCardProps {
 }
 
 const PLATFORM_COLORS: Record<string, string> = {
-  steam: 'bg-blue-600',
-  epic: 'bg-purple-600',
-  xbox: 'bg-green-700',
-  gog: 'bg-indigo-600',
-  mods: 'bg-orange-600',
-  other: 'bg-gray-600',
+  steam: 'bg-steam-blue',
+  epic: 'bg-purple-500',
+  xbox: 'bg-steam-green',
+  gog: 'bg-indigo-500',
+  mods: 'bg-steam-orange',
+  other: 'bg-steam-text-secondary',
 }
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -30,6 +30,7 @@ const PLATFORM_LABELS: Record<string, string> = {
 
 export default function GameCard({ game, onLaunch, onDelete, onChangePlatform, onSelectGame }: GameCardProps) {
   const [showMenu, setShowMenu] = useState(false)
+  const [imageLoaded, setImageLoaded] = useState(false)
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Nunca jogado'
@@ -46,72 +47,57 @@ export default function GameCard({ game, onLaunch, onDelete, onChangePlatform, o
     <div
       role="button"
       tabIndex={0}
-      className="group relative bg-steam-card rounded-lg overflow-hidden cursor-pointer transition-all hover:ring-2 hover:ring-steam-blue/50 hover:scale-[1.02]"
+      className="group relative bg-steam-card rounded-xl overflow-visible cursor-pointer shadow-card hover:shadow-card-hover hover:scale-[1.03] transition-all duration-300 ease-out"
       onClick={handleClick}
       onKeyDown={(e) => { if (e.key === 'Enter') handleClick() }}
     >
       {/* Cover image */}
-      <div className="aspect-video bg-gradient-to-br from-steam-card to-steam-darker relative">
+      <div className="aspect-video bg-gradient-to-br from-steam-card to-steam-darkest relative overflow-hidden rounded-t-xl">
+        {/* Shimmer loading */}
+        {!imageLoaded && game.coverImage && (
+          <div className="absolute inset-0 shimmer bg-steam-card" />
+        )}
+
         {game.coverImage ? (
           <img
             src={game.coverImage}
             alt={game.name}
-            className="w-full h-full object-cover"
+            className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-110 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+            onLoad={() => setImageLoaded(true)}
             onError={(e) => {
               const target = e.target as HTMLImageElement
               target.style.display = 'none'
             }}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-4xl text-steam-text/30">
-            {game.platform === 'mods' ? '🔧' : '🎮'}
+          <div className="w-full h-full flex items-center justify-center">
+            <span className="text-3xl sm:text-4xl md:text-5xl opacity-30 group-hover:scale-110 transition-transform duration-300">
+              {game.platform === 'mods' ? '🔧' : '🎮'}
+            </span>
           </div>
         )}
 
-        {/* Hover overlay */}
-        <div className="absolute inset-0 bg-black/60 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
-            onClick={(e) => { e.stopPropagation(); onLaunch(game) }}
-            className="flex items-center gap-2 bg-steam-green hover:bg-steam-green/80 text-steam-dark px-3 py-2 rounded font-semibold text-sm transition-colors"
-          >
-            <FiPlay size={14} />
-            Jogar
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); handleClick() }}
-            className="px-3 py-2 bg-white/20 hover:bg-white/30 text-white rounded text-sm font-semibold transition-colors"
-          >
-            Detalhes
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              if (confirm(`Remover "${game.name}" da biblioteca?`)) onDelete(game.id)
-            }}
-            className="p-2 bg-red-600/80 hover:bg-red-600 text-white rounded transition-colors"
-          >
-            <FiTrash2 size={14} />
-          </button>
-        </div>
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-300" />
 
         {/* Platform badge */}
-        <div className="absolute top-2 left-2">
+        <div className="absolute top-2 left-2 sm:top-2.5 sm:left-2.5 z-10">
           <button
             onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu) }}
-            className={`flex items-center gap-1 ${PLATFORM_COLORS[game.platform || 'other']} px-2 py-1 rounded text-xs text-white font-medium hover:opacity-80`}
+            className={`flex items-center gap-1 ${PLATFORM_COLORS[game.platform || 'other']} px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md text-[10px] sm:text-[11px] text-white font-semibold hover:brightness-110 transition-all shadow-md`}
           >
             {PLATFORM_LABELS[game.platform || 'other']}
-            <FiChevronDown size={12} />
+            <FiChevronDown size={9} className={`transition-transform ${showMenu ? 'rotate-180' : ''}`} />
           </button>
           {showMenu && (
-            <div className="absolute top-full left-0 mt-1 bg-steam-darker border border-white/10 rounded shadow-lg z-50 py-1">
+            <div className="absolute top-full left-0 mt-1.5 bg-steam-darkest/95 backdrop-blur-md border border-white/10 rounded-lg shadow-dropdown z-50 py-1.5 min-w-[110px] sm:min-w-[120px] animate-fade-in">
               {platforms.map(p => (
                 <button
                   key={p}
                   onClick={(e) => { e.stopPropagation(); onChangePlatform(game.id, p); setShowMenu(false) }}
-                  className={`w-full text-left px-3 py-1.5 text-sm hover:bg-white/10 flex items-center gap-2 ${game.platform === p ? 'text-steam-blue' : 'text-steam-text'}`}
+                  className={`w-full text-left px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm hover:bg-white/10 flex items-center gap-2 transition-colors ${game.platform === p ? 'text-steam-blue' : 'text-steam-text'}`}
                 >
-                  <div className={`w-2 h-2 rounded-full ${PLATFORM_COLORS[p]}`} />
+                  <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${PLATFORM_COLORS[p]}`} />
                   {PLATFORM_LABELS[p]}
                 </button>
               ))}
@@ -121,12 +107,40 @@ export default function GameCard({ game, onLaunch, onDelete, onChangePlatform, o
       </div>
 
       {/* Info */}
-      <div className="p-3">
-        <h3 className="font-medium text-steam-light truncate" title={game.name}>{game.name}</h3>
-        <div className="flex items-center gap-1 mt-1 text-xs text-steam-text/60">
-          <FiClock size={12} />
+      <div className="p-2.5 sm:p-3 md:p-3.5">
+        <h3 className="font-semibold text-steam-light truncate text-[11px] sm:text-[12px] md:text-[13px] leading-tight" title={game.name}>
+          {game.name}
+        </h3>
+        <div className="flex items-center gap-1 sm:gap-1.5 mt-1 sm:mt-1.5 text-[9px] sm:text-[10px] md:text-[11px] text-steam-text-secondary">
+          <FiClock size={9} className="opacity-60" />
           <span>{formatDate(game.lastPlayed)}</span>
         </div>
+      </div>
+
+      {/* Hover overlay - outside image area, inside card */}
+      <div className="absolute inset-0 flex items-center justify-center gap-1.5 sm:gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 pointer-events-none group-hover:pointer-events-auto z-20">
+        <button
+          onClick={(e) => { e.stopPropagation(); onLaunch(game) }}
+          className="flex items-center gap-1 bg-steam-green hover:bg-steam-green/90 text-steam-dark px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg font-semibold text-[10px] sm:text-xs transition-all shadow-lg hover:shadow-glow-green"
+        >
+          <FiPlay size={11} fill="currentColor" />
+          Jogar
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); handleClick() }}
+          className="px-2 py-1.5 sm:px-3 sm:py-2 bg-white/15 hover:bg-white/25 text-white rounded-lg text-[10px] sm:text-xs font-semibold transition-all backdrop-blur-sm"
+        >
+          Detalhes
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            if (confirm(`Remover "${game.name}" da biblioteca?`)) onDelete(game.id)
+          }}
+          className="p-1.5 sm:p-2 bg-red-500/80 hover:bg-red-500 text-white rounded-lg transition-all"
+        >
+          <FiTrash2 size={11} />
+        </button>
       </div>
     </div>
   )
