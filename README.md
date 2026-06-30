@@ -125,6 +125,7 @@ Capas buscadas via **Steam Store API** (gratuita, sem autenticação).
 
 | Versão | Data | Mudança |
 |--------|------|---------|
+| 1.0.1 | 30/06/2026 | Notificações de conquistas estilo Steam (sistema operacional) |
 | 1.0.0 | 30/06/2026 | Release inicial |
 
 Ver [CHANGELOG.md](CHANGELOG.md) para histórico completo.
