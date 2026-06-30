@@ -1,0 +1,11 @@
+node_modules/
+dist/
+dist-electron/
+release/
+*.db
+*.db-wal
+*.db-shm
+.env
+steam-config.json
+.DS_Store
+Thumbs.db

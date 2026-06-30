@@ -1,0 +1,89 @@
+============================================================
+  GAME LAUNCHER - RESUMO DE MUDANÇAS
+  Última atualização: 30/06/2026
+============================================================
+
+MUDANÇAS NESTA SESSÃO:
+----------------------
+
+1. REMOVIDO: Sistema de Steam API Config
+   - Deletado: src/ui/pages/Settings.tsx (página de configurações)
+   - Deletado: src/ui/components/AchievementsPanel.tsx (componente órfão)
+   - Removido de main.ts:
+     * STEAM_CONFIG_PATH constant
+     * SteamConfig interface
+     * loadSteamConfig() / saveSteamConfig()
+     * fetchSteamAchievements() (usava API key)
+     * IPC handlers: get-steam-config, save-steam-config, get-achievements
+   - Removido de preload.ts:
+     * getSteamConfig, saveSteamConfig, getAchievements
+   - Removido de types/index.ts:
+     * SteamConfig interface
+     * getSteamConfig, saveSteamConfig, getAchievements do ElectronAPI
+   - Removido de App.tsx:
+     * Import e renderização de Settings
+     * onNavigateSettings do GameDetail
+   - Removido de Sidebar.tsx:
+     * Botão "Configurações" e FiSettings icon
+     * 'settings' do Page type
+   - Removido de GameDetail.tsx:
+     * onNavigateSettings prop
+     * achievements state (API)
+     * loadingAchievements state
+     * loadAchievements function
+     * Botão "Configurar Steam API"
+     * Botão "Buscar conquistas da Steam"
+
+2. MANTIDO:
+   - get-cached-achievements (lê do DB)
+   - get-steam-store-info (não precisa de API key)
+   - Stellar Blade parser (ler save)
+   - Todas as funcionalidades de scanner, play time, etc.
+
+3. DOCUMENTAÇÃO CRIADA:
+   - docs/SISTEMA-COMPLETO.md — Documentação completa do sistema
+   - docs/SISTEMA-RESUMO.txt — Este arquivo
+   - docs/stellar-blade-parser.md — Parser do Stellar Blade
+   - AGENTS.md — Atualizado com informações do parser
+
+ARQUIVOS ATUAIS:
+----------------
+
+src/electron/
+  main.ts           → Processo principal (308 linhas)
+  preload.ts        → Context bridge (20 linhas)
+  database.ts       → SQLite CRUD (270 linhas)
+  gameScanner.ts    → Scanner multi-plataforma (673 linhas)
+  stellarBladeParser.ts → Parser save Stellar Blade
+
+src/ui/
+  App.tsx           → Roteamento principal
+  components/
+    TitleBar.tsx    → Barra de título customizada
+    Sidebar.tsx     → Menu lateral
+    GameCard.tsx    → Card de jogo
+    StellarBladeAchievements.tsx → Conquistas do save
+  pages/
+    Library.tsx     → Biblioteca (grid/lista)
+    GameDetail.tsx  → Detalhe do jogo
+    AddGame.tsx     → Adicionar jogo manual
+
+src/types/
+  index.ts          → Interfaces TypeScript
+
+IPC HANDLERS ATUAIS:
+--------------------
+get-games, save-games, delete-game
+scan-games, select-exe, select-image
+launch-game (com play time tracking)
+get-cached-achievements (lê do DB)
+get-play-sessions, get-stats
+get-steam-store-info (screenshots, description, etc.)
+has-stellar-blade-save, parse-stellar-blade-save
+window-minimize, window-maximize, window-close
+
+COMANDOS:
+---------
+npm run dev           → Dev mode (auto-build electron)
+npm run build         → Build completo (vite + electron)
+npm run electron:build → Build + pacote NSIS (.exe)

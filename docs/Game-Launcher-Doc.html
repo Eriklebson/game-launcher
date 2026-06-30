@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Launcher - Documentação Completa</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    :root {
+      --bg-primary: #1b2838;
+      --bg-secondary: #171a21;
+      --bg-card: #1e2a3a;
+      --bg-hover: #2a475e;
+      --accent-blue: #66c0f4;
+      --accent-green: #a4d007;
+      --accent-orange: #cf6a32;
+      --accent-red: #d94126;
+      --text-primary: #c7d5e0;
+      --text-secondary: #8b9bb4;
+      --text-light: #ffffff;
+      --border: rgba(255,255,255,0.08);
+      --gradient-blue: linear-gradient(135deg, #66c0f4 0%, #4b8bb9 100%);
+      --gradient-green: linear-gradient(135deg, #a4d007 0%, #7ba305 100%);
+      --gradient-dark: linear-gradient(180deg, #1b2838 0%, #0e1621 100%);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    /* ===== COVER PAGE ===== */
+    .cover {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--gradient-dark);
+      position: relative;
+      overflow: hidden;
+      padding: 60px 40px;
+    }
+
+    .cover::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(ellipse at center, rgba(102,192,244,0.08) 0%, transparent 60%);
+      animation: pulse 8s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.05); }
+    }
+
+    .cover-logo {
+      position: relative;
+      z-index: 1;
+      margin-bottom: 40px;
+    }
+
+    .cover-logo svg {
+      filter: drop-shadow(0 0 40px rgba(102,192,244,0.3));
+    }
+
+    .cover-title {
+      position: relative;
+      z-index: 1;
+      font-size: 52px;
+      font-weight: 800;
+      color: var(--text-light);
+      text-align: center;
+      margin-bottom: 16px;
+      letter-spacing: -1px;
+    }
+
+    .cover-subtitle {
+      position: relative;
+      z-index: 1;
+      font-size: 20px;
+      color: var(--accent-blue);
+      text-align: center;
+      margin-bottom: 60px;
+      font-weight: 300;
+    }
+
+    .cover-meta {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      gap: 40px;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .cover-meta span {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cover-badge {
+      position: relative;
+      z-index: 1;
+      margin-top: 60px;
+      padding: 12px 32px;
+      background: var(--gradient-green);
+      color: var(--bg-primary);
+      font-weight: 700;
+      font-size: 14px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* ===== TABLE OF CONTENTS ===== */
+    .toc {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 80px 40px;
+    }
+
+    .toc h2 {
+      font-size: 28px;
+      color: var(--text-light);
+      margin-bottom: 40px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--accent-blue);
+      display: inline-block;
+    }
+
+    .toc-list {
+      list-style: none;
+      counter-reset: toc-counter;
+    }
+
+    .toc-list li {
+      counter-increment: toc-counter;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .toc-list li::before {
+      content: counter(toc-counter, decimal-leading-zero);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      color: var(--accent-blue);
+      font-weight: 500;
+      min-width: 32px;
+    }
+
+    .toc-list a {
+      color: var(--text-primary);
+      text-decoration: none;
+      font-size: 16px;
+      transition: color 0.2s;
+    }
+
+    .toc-list a:hover {
+      color: var(--accent-blue);
+    }
+
+    /* ===== CONTENT ===== */
+    .content {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 40px 100px;
+    }
+
+    .section {
+      margin-bottom: 80px;
+      page-break-inside: avoid;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 32px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      color: var(--accent-blue);
+      background: rgba(102,192,244,0.1);
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    .section h2 {
+      font-size: 28px;
+      color: var(--text-light);
+      font-weight: 700;
+    }
+
+    .section h3 {
+      font-size: 20px;
+      color: var(--accent-blue);
+      margin: 32px 0 16px;
+      font-weight: 600;
+    }
+
+    .section h4 {
+      font-size: 16px;
+      color: var(--text-light);
+      margin: 24px 0 12px;
+      font-weight: 600;
+    }
+
+    p {
+      margin-bottom: 16px;
+      color: var(--text-primary);
+    }
+
+    /* ===== CARDS ===== */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin: 24px 0;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-blue);
+    }
+
+    .card-icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(102,192,244,0.1);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .card-icon svg {
+      width: 24px;
+      height: 24px;
+      stroke: var(--accent-blue);
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .card-icon.green {
+      background: rgba(164,208,7,0.1);
+    }
+    .card-icon.green svg { stroke: var(--accent-green); }
+
+    .card-icon.orange {
+      background: rgba(207,106,50,0.1);
+    }
+    .card-icon.orange svg { stroke: var(--accent-orange); }
+
+    .card-icon.red {
+      background: rgba(217,65,38,0.1);
+    }
+    .card-icon.red svg { stroke: var(--accent-red); }
+
+    .card h4 {
+      font-size: 16px;
+      color: var(--text-light);
+      margin: 0 0 8px;
+    }
+
+    .card p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    /* ===== TABLES ===== */
+    .table-wrapper {
+      overflow-x: auto;
+      margin: 24px 0;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    thead {
+      background: var(--bg-card);
+    }
+
+    th {
+      padding: 14px 16px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-light);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-primary);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(102,192,244,0.03);
+    }
+
+    /* ===== CODE BLOCKS ===== */
+    .code-block {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin: 20px 0;
+      overflow-x: auto;
+      position: relative;
+    }
+
+    .code-block::before {
+      content: attr(data-lang);
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.5;
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--accent-blue);
+      line-height: 1.8;
+    }
+
+    .inline-code {
+      background: rgba(102,192,244,0.1);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--accent-blue);
+    }
+
+    /* ===== DIAGRAM ===== */
+    .diagram {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 40px;
+      margin: 32px 0;
+      text-align: center;
+    }
+
+    .diagram-box {
+      display: inline-block;
+      background: var(--bg-secondary);
+      border: 2px solid var(--accent-blue);
+      border-radius: 8px;
+      padding: 12px 24px;
+      margin: 8px;
+      font-weight: 600;
+      color: var(--text-light);
+      font-size: 14px;
+    }
+
+    .diagram-arrow {
+      display: inline-block;
+      color: var(--accent-blue);
+      font-size: 20px;
+      margin: 0 8px;
+      vertical-align: middle;
+    }
+
+    .diagram-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin: 16px 0;
+      flex-wrap: wrap;
+    }
+
+    .diagram-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 8px;
+      font-style: italic;
+    }
+
+    /* ===== HIGHLIGHT BOX ===== */
+    .highlight {
+      background: rgba(164,208,7,0.08);
+      border-left: 4px solid var(--accent-green);
+      border-radius: 0 8px 8px 0;
+      padding: 20px 24px;
+      margin: 24px 0;
+    }
+
+    .highlight.warning {
+      background: rgba(217,65,38,0.08);
+      border-left-color: var(--accent-red);
+    }
+
+    .highlight.info {
+      background: rgba(102,192,244,0.08);
+      border-left-color: var(--accent-blue);
+    }
+
+    .highlight strong {
+      color: var(--text-light);
+    }
+
+    .highlight p {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    /* ===== BADGES ===== */
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge.steam { background: rgba(102,192,244,0.15); color: var(--accent-blue); }
+    .badge.epic { background: rgba(128,128,128,0.15); color: #aaa; }
+    .badge.xbox { background: rgba(16,124,16,0.15); color: #4caf50; }
+    .badge.gog { background: rgba(134,50,138,0.15); color: #c87dc8; }
+    .badge.mods { background: rgba(207,106,50,0.15); color: var(--accent-orange); }
+    .badge.other { background: rgba(52,73,94,0.15); color: var(--text-secondary); }
+
+    /* ===== LISTS ===== */
+    ul, ol {
+      margin: 16px 0;
+      padding-left: 24px;
+    }
+
+    li {
+      margin-bottom: 8px;
+      color: var(--text-primary);
+    }
+
+    /* ===== PAGE BREAK ===== */
+    @media print {
+      .cover { page-break-after: always; }
+      .toc { page-break-after: always; }
+      .section { page-break-inside: avoid; }
+      body { background: white; color: #333; }
+    }
+
+    /* ===== PRINT BUTTON ===== */
+    .print-btn {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      background: var(--gradient-green);
+      color: var(--bg-primary);
+      border: none;
+      padding: 16px 32px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      z-index: 1000;
+      box-shadow: 0 4px 20px rgba(164,208,7,0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .print-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 30px rgba(164,208,7,0.4);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== COVER PAGE ===== -->
+<div class="cover">
+  <div class="cover-logo">
+    <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
+      <rect width="120" height="120" rx="24" fill="#66c0f4" fill-opacity="0.1"/>
+      <rect x="2" y="2" width="116" height="116" rx="22" stroke="#66c0f4" stroke-opacity="0.3" stroke-width="2"/>
+      <path d="M40 45L55 35L70 45V75L55 85L40 75V45Z" stroke="#66c0f4" stroke-width="3" fill="none"/>
+      <path d="M55 35V85" stroke="#66c0f4" stroke-width="2" stroke-opacity="0.5"/>
+      <path d="M40 45L70 45" stroke="#66c0f4" stroke-width="2" stroke-opacity="0.5"/>
+      <path d="M40 60L70 60" stroke="#66c0f4" stroke-width="2" stroke-opacity="0.5"/>
+      <path d="M40 75L70 75" stroke="#66c0f4" stroke-width="2" stroke-opacity="0.5"/>
+      <circle cx="85" cy="35" r="8" fill="#a4d007"/>
+      <path d="M82 35L84 37L88 33" stroke="white" stroke-width="2" fill="none"/>
+    </svg>
+  </div>
+  <h1 class="cover-title">Game Launcher</h1>
+  <p class="cover-subtitle">Documentação Completa do Sistema</p>
+  <div class="cover-meta">
+    <span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      30 de Junho de 2026
+    </span>
+    <span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      v1.0.0
+    </span>
+    <span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      erikl
+    </span>
+  </div>
+  <div class="cover-badge">Electron + React + SQLite</div>
+</div>
+
+<!-- ===== TABLE OF CONTENTS ===== -->
+<div class="toc">
+  <h2>Sumário</h2>
+  <ol class="toc-list">
+    <li><a href="#overview">Visão Geral</a></li>
+    <li><a href="#stack">Stack Tecnológica</a></li>
+    <li><a href="#structure">Estrutura de Arquivos</a></li>
+    <li><a href="#architecture">Arquitetura</a></li>
+    <li><a href="#database">Banco de Dados</a></li>
+    <li><a href="#electron">Electron (Main Process)</a></li>
+    <li><a href="#frontend">Frontend (Renderer Process)</a></li>
+    <li><a href="#scanner">Scanner de Jogos</a></li>
+    <li><a href="#stellar">Stellar Blade Parser</a></li>
+    <li><a href="#build">Build e Deploy</a></li>
+    <li><a href="#maintenance">Guia de Manutenção</a></li>
+  </ol>
+</div>
+
+<!-- ===== CONTENT ===== -->
+<div class="content">
+
+  <!-- SECTION 1: Overview -->
+  <div class="section" id="overview">
+    <div class="section-header">
+      <span class="section-number">01</span>
+      <h2>Visão Geral</h2>
+    </div>
+
+    <p><strong>Game Launcher</strong> é um aplicativo desktop pessoal estilo Steam que permite organizar, descobrir e lançar jogos de todas as plataformas em um só lugar.</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <h4>Scanner Automático</h4>
+        <p>Detecta jogos do Steam, Epic, Xbox, GOG e pastas comuns automaticamente</p>
+      </div>
+      <div class="card">
+        <div class="card-icon green">
+          <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <h4>Biblioteca Visual</h4>
+        <p>Grid ou lista com capas, busca e filtros por plataforma</p>
+      </div>
+      <div class="card">
+        <div class="card-icon orange">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <h4>Play Time Tracking</h4>
+        <p>Registra tempo de jogo por sessão automaticamente</p>
+      </div>
+      <div class="card">
+        <div class="card-icon red">
+          <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </div>
+        <h4>Stellar Blade</h4>
+        <p>Parser de save para extrair conquistas sem Steam API</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: Tech Stack -->
+  <div class="section" id="stack">
+    <div class="section-header">
+      <span class="section-number">02</span>
+      <h2>Stack Tecnológica</h2>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Camada</th><th>Tecnologia</th><th>Versão</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Desktop</strong></td><td>Electron</td><td>33</td></tr>
+          <tr><td><strong>Frontend</strong></td><td>React + TypeScript</td><td>19</td></tr>
+          <tr><td><strong>Build</strong></td><td>Vite + esbuild</td><td>6</td></tr>
+          <tr><td><strong>Estilo</strong></td><td>Tailwind CSS</td><td>3</td></tr>
+          <tr><td><strong>Banco de Dados</strong></td><td>SQLite (sql.js WASM)</td><td>1.14</td></tr>
+          <tr><td><strong>Ícones</strong></td><td>react-icons (Fi)</td><td>5</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="highlight info">
+      <strong>Por que sql.js?</strong>
+      <p>SQLite puro em WebAssembly — sem módulos nativos, sem rebuild do Electron. Funciona em qualquer plataforma sem compilação.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 3: File Structure -->
+  <div class="section" id="structure">
+    <div class="section-header">
+      <span class="section-number">03</span>
+      <h2>Estrutura de Arquivos</h2>
+    </div>
+
+    <div class="code-block" data-lang="tree">
+      <code>
+src/<span style="color:#66c0f4">electron/</span>           <span style="color:#8b9bb4">← Main process (Node.js)</span>
+  ├── main.ts           <span style="color:#8b9bb4">← Entry point, janela, IPC, DB</span>
+  ├── preload.ts        <span style="color:#8b9bb4">← Context bridge</span>
+  ├── database.ts       <span style="color:#8b9bb4">← SQLite CRUD</span>
+  ├── gameScanner.ts    <span style="color:#8b9bb4">← Scanner multi-plataforma</span>
+  └── stellarBladeParser.ts <span style="color:#8b9bb4">← Parser save (READ ONLY)</span>
+
+src/<span style="color:#a4d007">ui/</span>                <span style="color:#8b9bb4">← Renderer process (React)</span>
+  ├── App.tsx           <span style="color:#8b9bb4">← Roteamento principal</span>
+  ├── components/
+  │   ├── TitleBar.tsx  <span style="color:#8b9bb4">← Barra de título customizada</span>
+  │   ├── Sidebar.tsx   <span style="color:#8b9bb4">← Menu lateral</span>
+  │   ├── GameCard.tsx  <span style="color:#8b9bb4">← Card de jogo</span>
+  │   └── StellarBladeAchievements.tsx
+  └── pages/
+      ├── Library.tsx   <span style="color:#8b9bb4">← Biblioteca (grid/lista)</span>
+      ├── GameDetail.tsx <span style="color:#8b9bb4">← Detalhe do jogo</span>
+      └── AddGame.tsx   <span style="color:#8b9bb4">← Adicionar jogo manual</span>
+
+<span style="color:#cf6a32">scripts/</span>
+  ├── build-electron.js <span style="color:#8b9bb4">← esbuild + cópia wasm</span>
+  └── wait-and-launch.js <span style="color:#8b9bb4">← Dev mode auto-build</span>
+      </code>
+    </div>
+  </div>
+
+  <!-- SECTION 4: Architecture -->
+  <div class="section" id="architecture">
+    <div class="section-header">
+      <span class="section-number">04</span>
+      <h2>Arquitetura</h2>
+    </div>
+
+    <div class="diagram">
+      <div class="diagram-row">
+        <div class="diagram-box" style="border-color: #a4d007;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a4d007" stroke-width="2" style="vertical-align: middle; margin-right: 8px;"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          React Frontend
+        </div>
+        <div class="diagram-arrow">←→</div>
+        <div class="diagram-box">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#66c0f4" stroke-width="2" style="vertical-align: middle; margin-right: 8px;"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          preload.ts
+        </div>
+        <div class="diagram-arrow">←→</div>
+        <div class="diagram-box" style="border-color: #a4d007;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a4d007" stroke-width="2" style="vertical-align: middle; margin-right: 8px;"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          Electron Main
+        </div>
+      </div>
+      <div class="diagram-label">contextBridge expõe API segura entre processos</div>
+
+      <div style="margin-top: 32px;">
+        <div class="diagram-row">
+          <div class="diagram-box" style="border-color: #cf6a32; font-size: 12px;">gameScanner.ts</div>
+          <div class="diagram-box" style="font-size: 12px;">database.ts</div>
+          <div class="diagram-box" style="border-color: #d94126; font-size: 12px;">stellarBladeParser.ts</div>
+        </div>
+        <div class="diagram-label">Módulos do Main Process</div>
+      </div>
+    </div>
+
+    <h3>Comunicação IPC</h3>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Direção</th><th>Método</th><th>Exemplo</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="badge steam">Renderer → Main</span></td><td><code class="inline-code">ipcRenderer.invoke()</code></td><td><code class="inline-code">window.electronAPI.getGames()</code></td></tr>
+          <tr><td><span class="badge xbox">Main → Renderer</span></td><td><code class="inline-code">ipcMain.handle()</code></td><td><code class="inline-code">ipcMain.handle('get-games', ...)</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SECTION 5: Database -->
+  <div class="section" id="database">
+    <div class="section-header">
+      <span class="section-number">05</span>
+      <h2>Banco de Dados</h2>
+    </div>
+
+    <p>Localização: <code class="inline-code">%APPDATA%\game-launcher\game-launcher.db</code></p>
+
+    <h3>Tabelas</h3>
+
+    <h4>games</h4>
+    <div class="code-block" data-lang="sql">
+      <code>
+<span style="color:#cf6a32">CREATE TABLE</span> games (
+  id <span style="color:#a4d007">TEXT PRIMARY KEY</span>,
+  name <span style="color:#a4d007">TEXT NOT NULL</span>,
+  executable_path <span style="color:#a4d007">TEXT NOT NULL</span>,
+  cover_image <span style="color:#8b9bb4">TEXT</span>,
+  platform <span style="color:#a4d007">TEXT NOT NULL DEFAULT</span> <span style="color:#cf6a32">'other'</span>,
+  last_played <span style="color:#8b9bb4">TEXT</span>,
+  play_time <span style="color:#a4d007">INTEGER NOT NULL DEFAULT</span> <span style="color:#cf6a32">0</span>,
+  last_session_start <span style="color:#8b9bb4">TEXT</span>,
+  steam_app_id <span style="color:#8b9bb4">TEXT</span>,
+  created_at <span style="color:#a4d007">TEXT NOT NULL DEFAULT</span> (datetime(<span style="color:#cf6a32">'now'</span>)),
+  updated_at <span style="color:#a4d007">TEXT NOT NULL DEFAULT</span> (datetime(<span style="color:#cf6a32">'now'</span>))
+);
+      </code>
+    </div>
+
+    <h4>achievements</h4>
+    <div class="code-block" data-lang="sql">
+      <code>
+<span style="color:#cf6a32">CREATE TABLE</span> achievements (
+  id <span style="color:#a4d007">INTEGER PRIMARY KEY AUTOINCREMENT</span>,
+  game_id <span style="color:#a4d007">TEXT NOT NULL</span>,
+  apiname <span style="color:#a4d007">TEXT NOT NULL</span>,
+  achieved <span style="color:#a4d007">INTEGER NOT NULL DEFAULT</span> <span style="color:#cf6a32">0</span>,
+  unlocktime <span style="color:#a4d007">INTEGER NOT NULL DEFAULT</span> <span style="color:#cf6a32">0</span>,
+  name <span style="color:#a4d007">TEXT NOT NULL</span>,
+  description <span style="color:#8b9bb4">TEXT</span>,
+  icon <span style="color:#8b9bb4">TEXT</span>,
+  icongray <span style="color:#8b9bb4">TEXT</span>,
+  updated_at <span style="color:#a4d007">TEXT NOT NULL DEFAULT</span> (datetime(<span style="color:#cf6a32">'now'</span>)),
+  <span style="color:#cf6a32">FOREIGN KEY</span> (game_id) <span style="color:#cf6a32">REFERENCES</span> games(id) <span style="color:#cf6a32">ON DELETE CASCADE</span>,
+  <span style="color:#a4d007">UNIQUE</span>(game_id, apiname)
+);
+      </code>
+    </div>
+
+    <h4>play_sessions</h4>
+    <div class="code-block" data-lang="sql">
+      <code>
+<span style="color:#cf6a32">CREATE TABLE</span> play_sessions (
+  id <span style="color:#a4d007">INTEGER PRIMARY KEY AUTOINCREMENT</span>,
+  game_id <span style="color:#a4d007">TEXT NOT NULL</span>,
+  start_time <span style="color:#a4d007">TEXT NOT NULL</span>,
+  end_time <span style="color:#8b9bb4">TEXT</span>,
+  duration_minutes <span style="color:#a4d007">INTEGER NOT NULL DEFAULT</span> <span style="color:#cf6a32">0</span>,
+  <span style="color:#cf6a32">FOREIGN KEY</span> (game_id) <span style="color:#cf6a32">REFERENCES</span> games(id) <span style="color:#cf6a32">ON DELETE CASCADE</span>
+);
+      </code>
+    </div>
+
+    <h3>Funções do Database</h3>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Função</th><th>Descrição</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code class="inline-code">initDatabase(path)</code></td><td>Cria/abre DB, cria tabelas, habilita WAL</td></tr>
+          <tr><td><code class="inline-code">getGames()</code></td><td>Lista todos os jogos (ORDER BY name)</td></tr>
+          <tr><td><code class="inline-code">getGame(id)</code></td><td>Busca jogo por ID</td></tr>
+          <tr><td><code class="inline-code">upsertGame(game)</code></td><td>Insert ou update (ON CONFLICT)</td></tr>
+          <tr><td><code class="inline-code">deleteGame(id)</code></td><td>Deleta jogo + achievements + sessions (CASCADE)</td></tr>
+          <tr><td><code class="inline-code">updateGamePlayTime(id, time, start)</code></td><td>Atualiza play_time e last_session_start</td></tr>
+          <tr><td><code class="inline-code">recordPlaySession(id, start, duration)</code></td><td>Insere sessão de jogo</td></tr>
+          <tr><td><code class="inline-code">getPlaySessions(id)</code></td><td>Lista sessões (ORDER BY start_time DESC)</td></tr>
+          <tr><td><code class="inline-code">saveAchievements(gameId, achievements)</code></td><td>Salva conquistas (DELETE + INSERT)</td></tr>
+          <tr><td><code class="inline-code">getAchievements(gameId)</code></td><td>Lista conquistas (achieved DESC)</td></tr>
+          <tr><td><code class="inline-code">getTotalPlayTime()</code></td><td>Soma total de play_time</td></tr>
+          <tr><td><code class="inline-code">getGameCount()</code></td><td>Contagem por plataforma</td></tr>
+          <tr><td><code class="inline-code">close()</code></td><td>Salva e fecha DB</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SECTION 6: Electron -->
+  <div class="section" id="electron">
+    <div class="section-header">
+      <span class="section-number">06</span>
+      <h2>Electron (Main Process)</h2>
+    </div>
+
+    <h3>Janela</h3>
+    <div class="card-grid">
+      <div class="card">
+        <h4>Dimensões</h4>
+        <p>1400×900 (min: 1000×600)</p>
+      </div>
+      <div class="card">
+        <h4>Frame</h4>
+        <p>Frameless (barra de título customizada)</p>
+      </div>
+      <div class="card">
+        <h4>Background</h4>
+        <p>#1b2838 (tema Steam)</p>
+      </div>
+      <div class="card">
+        <h4>Web Security</h4>
+        <p>Desabilitado (imagens file://)</p>
+      </div>
+    </div>
+
+    <h3>IPC Handlers</h3>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Handler</th><th>Descrição</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code class="inline-code">get-games</code></td><td>Lista jogos do DB</td></tr>
+          <tr><td><code class="inline-code">save-games</code></td><td>Salva/atualiza jogos</td></tr>
+          <tr><td><code class="inline-code">delete-game</code></td><td>Remove jogo + dados</td></tr>
+          <tr><td><code class="inline-code">scan-games</code></td><td>Escaneia todas as plataformas</td></tr>
+          <tr><td><code class="inline-code">select-exe</code></td><td>File picker para executável</td></tr>
+          <tr><td><code class="inline-code">select-image</code></td><td>File picker para imagem</td></tr>
+          <tr><td><code class="inline-code">launch-game</code></td><td>Inicia jogo + play time tracking</td></tr>
+          <tr><td><code class="inline-code">get-cached-achievements</code></td><td>Conquistas do DB</td></tr>
+          <tr><td><code class="inline-code">get-play-sessions</code></td><td>Sessões de jogo</td></tr>
+          <tr><td><code class="inline-code">get-stats</code></td><td>Estatísticas gerais</td></tr>
+          <tr><td><code class="inline-code">get-steam-store-info</code></td><td>Info da Steam Store (sem auth)</td></tr>
+          <tr><td><code class="inline-code">has-stellar-blade-save</code></td><td>Verifica se save existe</td></tr>
+          <tr><td><code class="inline-code">parse-stellar-blade-save</code></td><td>Parse do save (READ ONLY)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="highlight">
+      <strong>Play Time Tracking</strong>
+      <p>O app registra <code class="inline-code">last_session_start</code> ao abrir um jogo. Na próxima vez que o jogo for aberto (ou o app fechar), calcula o tempo decorrido e salva em <code class="inline-code">play_time</code> (minutos).</p>
+    </div>
+  </div>
+
+  <!-- SECTION 7: Frontend -->
+  <div class="section" id="frontend">
+    <div class="section-header">
+      <span class="section-number">07</span>
+      <h2>Frontend (Renderer Process)</h2>
+    </div>
+
+    <h3>Componentes</h3>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+        </div>
+        <h4>Sidebar</h4>
+        <p>Menu lateral: Biblioteca, Mods, Adicionar Jogo, Varrer Jogos</p>
+      </div>
+      <div class="card">
+        <div class="card-icon green">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        </div>
+        <h4>GameCard</h4>
+        <p>Card com capa, nome, badge de plataforma (dropdown), ações hover</p>
+      </div>
+      <div class="card">
+        <div class="card-icon orange">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </div>
+        <h4>GameDetail</h4>
+        <p>Hero banner, screenshots carousel, conquistas, requisitos, info sidebar</p>
+      </div>
+      <div class="card">
+        <div class="card-icon red">
+          <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
+        <h4>StellarBladeAchievements</h4>
+        <p>Lê save binário, exibe 25 trophy flags com progresso</p>
+      </div>
+    </div>
+
+    <h3>Fluxo do App</h3>
+    <div class="code-block" data-lang="text">
+      <code>
+<span style="color:#a4d007">initGames()</span>
+  → getGames() do DB
+  → scanGames() em paralelo
+  → mergeGames(saved, scanned) <span style="color:#8b9bb4">// dedup por executablePath</span>
+  → saveGames(merged)
+
+<span style="color:#66c0f4">selectGame(game)</span>
+  → abre GameDetail
+  → loadCachedAchievements()
+  → loadStoreInfo() <span style="color:#8b9bb4">// Steam Store API (sem auth)</span>
+  → loadPlaySessions()
+
+<span style="color:#cf6a32">launchGame(game)</span>
+  → calcula tempo da sessão anterior
+  → atualiza play_time no DB
+  → shell.openPath(executablePath)
+      </code>
+    </div>
+  </div>
+
+  <!-- SECTION 8: Game Scanner -->
+  <div class="section" id="scanner">
+    <div class="section-header">
+      <span class="section-number">08</span>
+      <h2>Scanner de Jogos</h2>
+    </div>
+
+    <h3>Fontes de Detecção</h3>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Plataforma</th><th>Método</th><th>Cobertura</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="badge steam">Steam</span></td>
+            <td><code class="inline-code">libraryfolders.vdf</code> → <code class="inline-code">appmanifest_*.acf</code></td>
+            <td>Todas as Steam Libraries</td>
+          </tr>
+          <tr>
+            <td><span class="badge epic">Epic</span></td>
+            <td><code class="inline-code">Manifests/*.item</code> (JSON)</td>
+            <td>ProgramData + LocalAppData</td>
+          </tr>
+          <tr>
+            <td><span class="badge gog">GOG</span></td>
+            <td>Scan de diretórios</td>
+            <td>C:, D:, E:, F:</td>
+          </tr>
+          <tr>
+            <td><span class="badge xbox">Xbox</span></td>
+            <td>PowerShell <code class="inline-code">Get-AppxPackage</code></td>
+            <td>Todos os packages</td>
+          </tr>
+          <tr>
+            <td><span class="badge other">Pastas</span></td>
+            <td>Scan recursivo (depth 3)</td>
+            <td>C:\Games, D:\Games, etc.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Busca de Capa</h3>
+    <p><code class="inline-code">searchSteamStore(gameName)</code> — API gratuita da Steam Store, sem autenticação.</p>
+    <div class="code-block" data-lang="javascript">
+      <code>
+<span style="color:#cf6a32">const</span> url = <span style="color:#cf6a32">`https://store.steampowered.com/api/storesearch/?term=</span>${name}<span style="color:#cf6a32">&l=english&cc=US`</span>;
+<span style="color:#cf6a32">return</span> {
+  coverImage: <span style="color:#cf6a32">`https://cdn.akamai.steamstatic.com/steam/apps/</span>${appId}<span style="color:#cf6a32">/header.jpg`</span>,
+  steamAppId: appId
+};
+      </code>
+    </div>
+
+    <h3>Filtros</h3>
+    <div class="card-grid">
+      <div class="card">
+        <h4>XBOX_EXCLUDE</h4>
+        <p>~170 nomes exatos de apps não-jogos (Microsoft, Spotify, Discord, etc.)</p>
+      </div>
+      <div class="card">
+        <h4>SKIP_EXE_NAMES</h4>
+        <p>uninstall, setup, install, config, settings, etc.</p>
+      </div>
+      <div class="card">
+        <h4>SKIP_DIRS</h4>
+        <p>redist, vcredist, .git, node_modules, src, build, etc.</p>
+      </div>
+      <div class="card">
+        <h4>MODS_MAP</h4>
+        <p>LOOT, CurseForge, Vortex, Mod Organizer, Creation Kit, etc.</p>
+      </div>
+    </div>
+
+    <div class="highlight warning">
+      <strong>Xbox: Nomes de Pacote ≠ Nome do Jogo</strong>
+      <p>O pacote <code class="inline-code">Microsoft.ForteBaseGame</code> NÃO é o nome do jogo. O parser lê <code class="inline-code">AppxManifest.xml</code> para extrair o <code class="inline-code">&lt;DisplayName&gt;</code> real.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 9: Stellar Blade -->
+  <div class="section" id="stellar">
+    <div class="section-header">
+      <span class="section-number">09</span>
+      <h2>Stellar Blade Parser</h2>
+    </div>
+
+    <div class="highlight warning">
+      <strong>⚠ READ ONLY</strong>
+      <p>Este módulo APENAS LE o save. NUNCA modifica o arquivo. Não cria backups. Não escreve dados.</p>
+    </div>
+
+    <h3>Localização do Save</h3>
+    <div class="code-block" data-lang="path">
+      <code>
+<span style="color:#8b9bb4">%LOCALAPPDATA%\SB\Saved\SaveGames\</span><span style="color:#a4d007">{steamId}</span><span style="color:#8b9bb4">\StellarBladeSave00.sav</span>
+      </code>
+    </div>
+
+    <h3>Formato do Arquivo</h3>
+    <div class="card-grid">
+      <div class="card">
+        <h4>Engine</h4>
+        <p>Unreal Engine 4 (Release 4.26)</p>
+      </div>
+      <div class="card">
+        <h4>Header</h4>
+        <p>"EVAS" (4 bytes)</p>
+      </div>
+      <div class="card">
+        <h4>Tamanho</h4>
+        <p>~10 MB</p>
+      </div>
+      <div class="card">
+        <h4>Steam ID</h4>
+        <p>FString no final do arquivo</p>
+      </div>
+    </div>
+
+    <h3>Estrutura UE4</h3>
+    <div class="code-block" data-lang="binary">
+      <code>
+<span style="color:#8b9bb4">Propriedade =</span> [Nome\0] [Tipo\0] [Size<span style="color:#8b9bb4">(4B LE)</span>] [ArrayIndex<span style="color:#8b9bb4">(4B LE)</span>] [Valor...]
+
+<span style="color:#cf6a32">BoolProperty:</span>     offset = nome + <span style="color:#a4d007">21</span> bytes  <span style="color:#8b9bb4">(13 + 4 + 4)</span>
+<span style="color:#cf6a32">UInt32Property:</span>   offset = nome + <span style="color:#a4d007">23</span> bytes  <span style="color:#8b9bb4">(15 + 4 + 4)</span>
+      </code>
+    </div>
+
+    <h3>Trophy Flags (25)</h3>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Trophy Flag</th><th>Conquista Steam</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code class="inline-code">Trophy_Platinum</code></td><td>EVE Protocol</td></tr>
+          <tr><td><code class="inline-code">Trophy_Activate_FirstCamp</code></td><td>Camp Preparation</td></tr>
+          <tr><td><code class="inline-code">Trophy_KillCharacter_Brute</code></td><td>Brute</td></tr>
+          <tr><td><code class="inline-code">Trophy_CompleteLevel_AltesLabor</code></td><td>Altess Levoire</td></tr>
+          <tr><td><code class="inline-code">Trophy_CharKill_AssassinationSkills</code></td><td>Silent Executioner</td></tr>
+          <tr><td><code class="inline-code">Trophy_JustEvade</code></td><td>Battlefield Martial Artist</td></tr>
+          <tr><td><code class="inline-code">Trophy_JustParry</code></td><td>Agile Gladiator</td></tr>
+          <tr><td colspan="2" style="text-align: center; color: var(--text-secondary);">... e mais 18 trophies</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Resultado do Usuário (6/25)</h3>
+    <div class="code-block" data-lang="output">
+      <code>
+<span style="color:#a4d007">✓</span> Camp Preparation          <span style="color:#8b9bb4">(progress: 256)</span>
+<span style="color:#a4d007">✓</span> Brute                     <span style="color:#8b9bb4">(progress: 256)</span>
+<span style="color:#a4d007">✓</span> Altess Levoire            <span style="color:#8b9bb4">(progress: 256)</span>
+<span style="color:#a4d007">✓</span> Silent Executioner        <span style="color:#8b9bb4">(progress: 12800)</span>
+<span style="color:#a4d007">✓</span> Battlefield Martial Artist <span style="color:#8b9bb4">(progress: 51200)</span>
+<span style="color:#a4d007">✓</span> Agile Gladiator           <span style="color:#8b9bb4">(progress: 76800)</span>
+      </code>
+    </div>
+  </div>
+
+  <!-- SECTION 10: Build -->
+  <div class="section" id="build">
+    <div class="section-header">
+      <span class="section-number">10</span>
+      <h2>Build e Deploy</h2>
+    </div>
+
+    <h3>Comandos</h3>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Comando</th><th>Descrição</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code class="inline-code">npm run dev</code></td><td>Dev mode (Vite + Electron simultâneo)</td></tr>
+          <tr><td><code class="inline-code">npm run build</code></td><td>Build completo (Vite + esbuild)</td></tr>
+          <tr><td><code class="inline-code">npm run electron:build</code></td><td>Build + pacote NSIS (.exe)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Processo de Build</h3>
+    <div class="diagram">
+      <div class="diagram-row">
+        <div class="diagram-box">Vite Build</div>
+        <div class="diagram-arrow">→</div>
+        <div class="diagram-box" style="border-color: #a4d007;">dist/</div>
+      </div>
+      <div class="diagram-label">React + TypeScript → bundle JS + CSS</div>
+
+      <div style="margin-top: 24px;">
+        <div class="diagram-row">
+          <div class="diagram-box">esbuild</div>
+          <div class="diagram-arrow">→</div>
+          <div class="diagram-box" style="border-color: #a4d007;">dist-electron/</div>
+          <div class="diagram-arrow">+</div>
+          <div class="diagram-box" style="border-color: #cf6a32;">sql-wasm.wasm</div>
+        </div>
+        <div class="diagram-label">main.ts + preload.ts → CJS (CommonJS)</div>
+      </div>
+
+      <div style="margin-top: 24px;">
+        <div class="diagram-row">
+          <div class="diagram-box">electron-builder</div>
+          <div class="diagram-arrow">→</div>
+          <div class="diagram-box" style="border-color: #a4d007;">Game Launcher Setup.exe</div>
+        </div>
+        <div class="diagram-label">NSIS installer (não one-click)</div>
+      </div>
+    </div>
+
+    <div class="highlight info">
+      <strong>sql-wasm.wasm</strong>
+      <p>O arquivo <code class="inline-code">sql-wasm.wasm</code> DEVE estar no mesmo diretório que <code class="inline-code">main.js</code>. O script de build copia automaticamente.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 11: Maintenance -->
+  <div class="section" id="maintenance">
+    <div class="section-header">
+      <span class="section-number">11</span>
+      <h2>Guia de Manutenção</h2>
+    </div>
+
+    <h3>Adicionar nova plataforma de scanner</h3>
+    <div class="code-block" data-lang="steps">
+      <code>
+<span style="color:#a4d007">1.</span> Criar <span style="color:#66c0f4">scanNovaPlataforma()</span> em gameScanner.ts
+<span style="color:#a4d007">2.</span> Retornar <span style="color:#66c0f4">ScannedGame[]</span>
+<span style="color:#a4d007">3.</span> Adicionar em <span style="color:#66c0f4">scanAllGames()</span> com Promise.all
+<span style="color:#a4d007">4.</span> Adicionar caso em <span style="color:#66c0f4">getGameCount()</span> em database.ts
+<span style="color:#a4d007">5.</span> Adicionar cor/label em GameCard.tsx e GameDetail.tsx
+      </code>
+    </div>
+
+    <h3>Adicionar novo IPC handler</h3>
+    <div class="code-block" data-lang="steps">
+      <code>
+<span style="color:#a4d007">1.</span> Handler em <span style="color:#66c0f4">main.ts</span>: ipcMain.handle('nome', ...)
+<span style="color:#a4d007">2.</span> Método em <span style="color:#66c0f4">preload.ts</span>: ipcRenderer.invoke('nome', ...)
+<span style="color:#a4d007">3.</span> Tipo em <span style="color:#66c0f4">types/index.ts</span>: ElectronAPI interface
+<span style="color:#a4d007">4.</span> Usar: window.electronAPI.nome()
+      </code>
+    </div>
+
+    <h3>Troubleshooting</h3>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Problema</th><th>Solução</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code class="inline-code">sql-wasm.wasm not found</code></td><td>Rodar <code class="inline-code">npm run build</code></td></tr>
+          <tr><td>Xbox names = package names</td><td>Verificar <code class="inline-code">getXboxDisplayName()</code></td></tr>
+          <tr><td>Capa não aparece</td><td>Verificar <code class="inline-code">webSecurity: false</code></td></tr>
+          <tr><td>GPU cache errors</td><td>Inofensivos no Windows</td></tr>
+          <tr><td>Port 5173 in use</td><td>Matar Vite anterior</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="highlight" style="margin-top: 40px;">
+      <strong>Dados do Usuário</strong>
+      <p>
+        Steam ID: <code class="inline-code">76561197960285355</code><br>
+        Stellar Blade AppID: <code class="inline-code">3489700</code><br>
+        Save: <code class="inline-code">C:\Users\erikl\AppData\Local\SB\Saved\SaveGames\76561197960285355\</code>
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Print Button -->
+<button class="print-btn" onclick="window.print()">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+  Imprimir / Salvar PDF
+</button>
+
+</body>
+</html>
