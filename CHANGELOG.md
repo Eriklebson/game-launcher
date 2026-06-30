@@ -5,6 +5,21 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.0.1] - 30-06-2026
+
+### Adicionado
+- Notificação de conquistas estilo Steam (sistema operacional):
+  - Janela Electron transparente sempre no topo
+  - Aparece sobre jogos e outras janelas
+  - Slide-in animation da direita
+  - Barra de progresso com auto-dismiss (5s)
+- Botão de teste na Sidebar para preview das notificações
+
+### Corrigido
+- Screenshots previews agora funcionam (fallback de URLs: path_600 → path_thousand → path_full)
+- Barra de progresso da notificação (corrigido typo na animação)
+- Altura da janela de notificação aumentada (120px → 150px)
+
 ## [1.0.0] - 30-06-2026
 
 ### Adicionado
