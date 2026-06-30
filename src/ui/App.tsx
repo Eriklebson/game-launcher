@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Sidebar from './components/Sidebar'
 import TitleBar from './components/TitleBar'
 import Library from './pages/Library'
 import AddGame from './pages/AddGame'
 import GameDetail from './pages/GameDetail'
+import { findNewAchievements } from './components/AchievementNotification'
 import { Game, ScannedGame } from '../types'
 
 type Page = 'library' | 'mods' | 'add-game'
@@ -112,6 +113,27 @@ export default function App() {
     setSelectedGame(null)
   }
 
+  const handleAchievementsLoaded = useCallback((gameName: string, achievements: { apiname: string; achieved: number; name: string; description: string; icon?: string }[]) => {
+    const newAchievements = findNewAchievements(achievements, gameName)
+    // Show system-level notification for each new achievement
+    for (const ach of newAchievements) {
+      window.electronAPI.showAchievementNotification({
+        name: ach.name,
+        description: ach.description,
+        gameName: ach.gameName,
+        icon: ach.icon,
+      })
+    }
+  }, [])
+
+  const handleTestNotification = useCallback(() => {
+    window.electronAPI.showAchievementNotification({
+      name: 'Primeira Conquista',
+      description: 'Esta é uma notificação de teste do Game Launcher',
+      gameName: 'Game Launcher',
+    })
+  }, [])
+
   const filteredGames = currentPage === 'mods'
     ? games.filter(g => g.platform === 'mods')
     : games.filter(g => g.platform !== 'mods')
@@ -137,6 +159,7 @@ export default function App() {
             modsCount={modsCount}
             scanning={scanning}
             onRescan={handleRescan}
+            onTestNotification={handleTestNotification}
           />
           <main className="flex-1 overflow-hidden">
             <GameDetail
@@ -147,6 +170,7 @@ export default function App() {
                 handleDeleteGame(id)
                 setSelectedGame(null)
               }}
+              onAchievementsLoaded={handleAchievementsLoaded}
             />
           </main>
         </div>
@@ -165,6 +189,7 @@ export default function App() {
           modsCount={modsCount}
           scanning={scanning}
           onRescan={handleRescan}
+          onTestNotification={handleTestNotification}
         />
         <main className="flex-1 overflow-auto">
           {(currentPage === 'library' || currentPage === 'mods') && (

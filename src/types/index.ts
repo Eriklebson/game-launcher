@@ -120,6 +120,12 @@ export interface ElectronAPI {
   getSteamStoreInfo: (steamAppId: string) => Promise<SteamStoreInfo | null>;
   hasStellarBladeSave: () => Promise<boolean>;
   parseStellarBladeSave: () => Promise<StellarBladeSaveData | null>;
+  // Achievement Notification (system-level overlay)
+  showAchievementNotification: (data: { name: string; description: string; gameName: string; icon?: string }) => void;
+  hideAchievementNotification: () => void;
+  onNotificationHidden: () => void;
+  onShowAchievement: (callback: (data: { name: string; description: string; gameName: string; icon?: string }) => void) => void;
+  onHideAchievement: (callback: () => void) => void;
 }
 
 declare global {

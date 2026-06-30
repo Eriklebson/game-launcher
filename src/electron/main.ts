@@ -112,6 +112,7 @@ function dbToGame(row: db.GameRow): Game {
 }
 
 let mainWindow: BrowserWindow | null = null;
+let notificationWindow: BrowserWindow | null = null;
 
 function createWindow(): void {
   const preloadPath = path.join(__dirname, 'preload.js');
@@ -138,9 +139,48 @@ function createWindow(): void {
   }
 }
 
+function createNotificationWindow(): void {
+  const preloadPath = path.join(__dirname, 'preload.js');
+  const { width: screenWidth, height: screenHeight } = require('electron').screen.getPrimaryDisplay().workAreaSize;
+
+  notificationWindow = new BrowserWindow({
+    width: 360,
+    height: 150,
+    x: screenWidth - 380,
+    y: screenHeight - 170,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    movable: false,
+    focusable: false,
+    show: false,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: preloadPath,
+    },
+  });
+
+  notificationWindow.setVisibleOnAllWorkspaces(true);
+  notificationWindow.setAlwaysOnTop(true, 'screen-saver');
+
+  if (isDev) {
+    notificationWindow.loadFile(path.join(__dirname, '../src/electron/notification.html'));
+  } else {
+    notificationWindow.loadFile(path.join(__dirname, 'notification.html'));
+  }
+
+  notificationWindow.on('closed', () => {
+    notificationWindow = null;
+  });
+}
+
 app.whenReady().then(async () => {
   await db.initDatabase(app.getPath('userData'));
   createWindow();
+  createNotificationWindow();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -307,3 +347,23 @@ ipcMain.on('window-maximize', () => {
   }
 });
 ipcMain.on('window-close', () => mainWindow?.close());
+
+// Achievement Notification Window
+ipcMain.on('show-achievement-notification', (_event, data: { name: string; description: string; gameName: string; icon?: string }) => {
+  if (notificationWindow && !notificationWindow.isDestroyed()) {
+    notificationWindow.webContents.send('show-achievement', data);
+    notificationWindow.showInactive();
+  }
+});
+
+ipcMain.on('hide-achievement-notification', () => {
+  if (notificationWindow && !notificationWindow.isDestroyed()) {
+    notificationWindow.webContents.send('hide-achievement');
+  }
+});
+
+ipcMain.on('notification-hidden', () => {
+  if (notificationWindow && !notificationWindow.isDestroyed()) {
+    notificationWindow.hide();
+  }
+});

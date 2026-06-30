@@ -251,6 +251,13 @@ hasStellarBladeSave, parseStellarBladeSave
 - Dropdown de plataforma: permite reatribuir manualmente
 - Overflow visível no card para que os botões hover não sejam cortados
 
+#### AchievementNotification.tsx
+- Popup estilo Steam que aparece no canto inferior direito
+- Animação de slide-in da direita com barra de progresso
+- Auto-dismiss após 5 segundos
+- Armazena conquistas vistas no localStorage para detectar novas
+- Funções utilitárias: `getSeenAchievements`, `markAchievementSeen`, `findNewAchievements`
+
 #### StellarBladeAchievements.tsx
 - Detecta save do Stellar Blade automaticamente
 - Exibe 25 trophy flags com status (completo/incompleto)

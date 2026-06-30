@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: transparent;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow: hidden;
+      user-select: none;
+    }
+    .notification {
+      width: 340px;
+      background: rgba(23, 26, 33, 0.95);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(102, 192, 244, 0.3);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 20px rgba(102, 192, 244, 0.1);
+      transform: translateX(120%);
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .notification.show {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    .notification.hide {
+      transform: translateX(120%);
+      opacity: 0;
+    }
+    .header {
+      background: linear-gradient(90deg, rgba(102, 192, 244, 0.2) 0%, transparent 100%);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .header-icon {
+      width: 24px;
+      height: 24px;
+      background: rgba(102, 192, 244, 0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .header-icon svg {
+      width: 12px;
+      height: 12px;
+      fill: #66c0f4;
+    }
+    .header-text {
+      font-size: 11px;
+      font-weight: 700;
+      color: #66c0f4;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .content {
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .achievement-icon {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, rgba(102, 192, 244, 0.2) 0%, rgba(102, 192, 244, 0.05) 100%);
+      border: 1px solid rgba(102, 192, 244, 0.2);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    .achievement-icon svg {
+      width: 24px;
+      height: 24px;
+      fill: #66c0f4;
+    }
+    .achievement-icon img {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+    .achievement-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .achievement-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.2;
+    }
+    .achievement-desc {
+      font-size: 11px;
+      color: rgba(139, 155, 180, 0.6);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 3px;
+    }
+    .achievement-game {
+      font-size: 10px;
+      color: rgba(139, 155, 180, 0.4);
+      font-weight: 500;
+      margin-top: 6px;
+    }
+    .progress-bar {
+      height: 2px;
+      background: rgba(30, 42, 58, 0.8);
+    }
+    .progress-fill {
+      height: 100%;
+      background: #66c0f4;
+      width: 100%;
+      animation: shrink 5s linear forwards;
+    }
+    @keyframes shrink {
+      from { width: 100%; }
+      to { width: 0%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="notification" id="notification">
+    <div class="header">
+      <div class="header-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+      </div>
+      <span class="header-text">Conquista Desbloqueada!</span>
+    </div>
+    <div class="content">
+      <div class="achievement-icon" id="iconContainer">
+        <svg id="defaultIcon" viewBox="0 0 24 24"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+        <img id="achievementImg" style="display: none;" alt="">
+      </div>
+      <div class="achievement-info">
+        <div class="achievement-name" id="name">-</div>
+        <div class="achievement-desc" id="description">-</div>
+        <div class="achievement-game" id="gameName">-</div>
+      </div>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+  </div>
+
+  <script>
+    const notification = document.getElementById('notification');
+    const nameEl = document.getElementById('name');
+    const descEl = document.getElementById('description');
+    const gameEl = document.getElementById('gameName');
+    const defaultIcon = document.getElementById('defaultIcon');
+    const achievementImg = document.getElementById('achievementImg');
+    const progressFill = document.getElementById('progressFill');
+
+    let hideTimeout = null;
+
+    window.electronAPI.onShowAchievement((data) => {
+      nameEl.textContent = data.name;
+      descEl.textContent = data.description;
+      gameEl.textContent = data.gameName;
+
+      if (data.icon) {
+        achievementImg.src = data.icon;
+        achievementImg.style.display = 'block';
+        defaultIcon.style.display = 'none';
+      } else {
+        achievementImg.style.display = 'none';
+        defaultIcon.style.display = 'block';
+      }
+
+      // Reset animation
+      progressFill.style.animation = 'none';
+      progressFill.offsetHeight; // Trigger reflow
+      progressFill.style.animation = 'shrink 5s linear forwards';
+
+      // Show
+      notification.classList.remove('hide');
+      notification.classList.add('show');
+
+      // Auto hide after 5s
+      if (hideTimeout) clearTimeout(hideTimeout);
+      hideTimeout = setTimeout(() => {
+        notification.classList.remove('show');
+        notification.classList.add('hide');
+        window.electronAPI.onNotificationHidden();
+      }, 5000);
+    });
+
+    window.electronAPI.onHideAchievement(() => {
+      if (hideTimeout) clearTimeout(hideTimeout);
+      notification.classList.remove('show');
+      notification.classList.add('hide');
+    });
+  </script>
+</body>
+</html>

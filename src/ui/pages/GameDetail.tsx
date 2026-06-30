@@ -8,6 +8,7 @@ interface GameDetailProps {
   onBack: () => void
   onLaunch: (game: Game) => void
   onDelete: (id: string) => void
+  onAchievementsLoaded?: (gameName: string, achievements: { apiname: string; achieved: number; name: string; description: string; icon?: string }[]) => void
 }
 
 const PLATFORM_COLORS: Record<string, string> = {
@@ -39,7 +40,7 @@ function formatMinutes(minutes: number): string {
   return `${hours}h ${mins}min`
 }
 
-export default function GameDetail({ game, onBack, onLaunch, onDelete }: GameDetailProps) {
+export default function GameDetail({ game, onBack, onLaunch, onDelete, onAchievementsLoaded }: GameDetailProps) {
   const [cachedAchievements, setCachedAchievements] = useState<CachedAchievement[]>([])
   const [storeInfo, setStoreInfo] = useState<SteamStoreInfo | null>(null)
   const [loadingStore, setLoadingStore] = useState(false)
@@ -60,6 +61,10 @@ export default function GameDetail({ game, onBack, onLaunch, onDelete }: GameDet
     try {
       const cached = await window.electronAPI.getCachedAchievements(game.id)
       setCachedAchievements(cached)
+      // Notify parent about loaded achievements for notification detection
+      if (onAchievementsLoaded && cached.length > 0) {
+        onAchievementsLoaded(game.name, cached)
+      }
     } catch (e) {
       console.error('Error loading cached achievements:', e)
     }
@@ -250,7 +255,15 @@ export default function GameDetail({ game, onBack, onLaunch, onDelete }: GameDet
                             : 'border-transparent opacity-50 hover:opacity-100 hover:border-white/20'
                         }`}
                       >
-                        <img src={s.path_medium || s.path_600} alt="" className="w-full h-full object-cover" />
+                        <img
+                          src={s.path_600 || s.path_thousand || s.path_full}
+                          alt=""
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            target.src = s.path_full
+                          }}
+                        />
                       </button>
                     ))}
                   </div>

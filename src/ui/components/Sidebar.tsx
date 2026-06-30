@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { FiGrid, FiPlus, FiRefreshCw, FiTool, FiMenu, FiX } from 'react-icons/fi'
+import { FiGrid, FiPlus, FiRefreshCw, FiTool, FiMenu, FiX, FiAward } from 'react-icons/fi'
 
 type Page = 'library' | 'mods' | 'add-game'
 
@@ -10,9 +10,10 @@ interface SidebarProps {
   modsCount: number
   scanning: boolean
   onRescan: () => void
+  onTestNotification?: () => void
 }
 
-export default function Sidebar({ currentPage, onNavigate, gameCount, modsCount, scanning, onRescan }: SidebarProps) {
+export default function Sidebar({ currentPage, onNavigate, gameCount, modsCount, scanning, onRescan, onTestNotification }: SidebarProps) {
   const [version, setVersion] = useState('')
   const [collapsed, setCollapsed] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
@@ -143,6 +144,15 @@ export default function Sidebar({ currentPage, onNavigate, gameCount, modsCount,
             <FiRefreshCw size={14} className={scanning ? 'animate-spin' : ''} />
             {scanning ? 'Escaneando...' : 'Varrer Jogos'}
           </button>
+          {onTestNotification && (
+            <button
+              onClick={onTestNotification}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-steam-blue/10 hover:bg-steam-blue/20 text-steam-blue rounded-lg text-xs font-medium transition-all duration-200"
+            >
+              <FiAward size={12} />
+              Testar Notificação
+            </button>
+          )}
           {version && (
             <p className="text-center text-[10px] text-steam-text-secondary/40 font-mono">
               v{version}

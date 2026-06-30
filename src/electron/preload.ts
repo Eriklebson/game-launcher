@@ -17,4 +17,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getSteamStoreInfo: (steamAppId: string) => ipcRenderer.invoke('get-steam-store-info', steamAppId),
   hasStellarBladeSave: () => ipcRenderer.invoke('has-stellar-blade-save'),
   parseStellarBladeSave: () => ipcRenderer.invoke('parse-stellar-blade-save'),
+  // Achievement Notification (system-level overlay)
+  showAchievementNotification: (data: { name: string; description: string; gameName: string; icon?: string }) => ipcRenderer.send('show-achievement-notification', data),
+  hideAchievementNotification: () => ipcRenderer.send('hide-achievement-notification'),
+  onNotificationHidden: () => ipcRenderer.send('notification-hidden'),
+  onShowAchievement: (callback: (data: any) => void) => ipcRenderer.on('show-achievement', (_event, data) => callback(data)),
+  onHideAchievement: (callback: () => void) => ipcRenderer.on('hide-achievement', () => callback()),
 });

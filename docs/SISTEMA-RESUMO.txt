@@ -51,10 +51,17 @@ MUDANÇAS NESTA SESSÃO:
 
 2. GAMECARD - CORREÇÃO DE BOTÕES CORTADOS:
    - Problema: Botões (Jogar, Detalhes, Apagar) ficavam cortados
-     porque estavam dentro do div com overflow-hidden
    - Solução: Movidos para fora da área de imagem, dentro do card
-     com overflow-visible
    - Resultado: Botões aparecem completamente em qualquer tamanho
+
+3. NOTIFICAÇÕES DE CONQUISTAS (ESTILO STEAM):
+   - Novo componente: AchievementNotification.tsx
+   - Popup no canto inferior direito com slide-in animation
+   - Barra de progresso que encolhe (5 segundos)
+   - Auto-dismiss após 5 segundos
+   - localStorage para rastrear conquistas já vistas
+   - Integração com GameDetail: detecta novas conquistas ao carregar
+   - Fila de notificações para múltiplas conquistas
 
 3. DOCUMENTAÇÃO ATUALIZADA:
    - SISTEMA-COMPLETO.md: Adicionada seção 7.1 Design Responsivo

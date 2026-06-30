@@ -34,6 +34,7 @@ Personal Steam-like desktop game launcher built with Electron + React + Vite + T
 - `components/Sidebar.tsx` - Navigation sidebar with game counts, collapsible on mobile (<768px)
 - `components/TitleBar.tsx` - Custom frameless window title bar
 - `components/StellarBladeAchievements.tsx` - Stellar Blade save-based achievements
+- `components/AchievementNotification.tsx` - Steam-like achievement popup notifications
 
 ### Types (src/types/index.ts)
 All TypeScript interfaces: Game, ScannedGame, SteamAchievement, AchievementResult, SteamStoreInfo, PlaySession, CachedAchievement, StellarBladeSaveData, StellarBladeTrophy, ElectronAPI

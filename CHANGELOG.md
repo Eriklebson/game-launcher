@@ -35,3 +35,8 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   - GameDetail com hero banner responsivo
   - GameCard com hover overlay sem corte
   - Todos os componentes com breakpoints sm:/md:/lg:
+- Notificações de conquistas estilo Steam:
+  - Popup no canto inferior direito com slide-in
+  - Barra de progresso com auto-dismiss (5s)
+  - Detecta novas conquistas via localStorage
+  - Fila para múltiplas notificações
