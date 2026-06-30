@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "concurrently \"vite\" \"node scripts/wait-and-launch.js\"",
     "build": "vite build && node scripts/build-electron.js",
-    "electron:build": "npm run build && electron-builder --win --config"
+    "electron:build": "npm run build && electron-builder --win --config",
+    "version:patch": "node scripts/version.js patch",
+    "version:minor": "node scripts/version.js minor",
+    "version:major": "node scripts/version.js major"
   },
   "build": {
     "appId": "com.gamelauncher.app",
