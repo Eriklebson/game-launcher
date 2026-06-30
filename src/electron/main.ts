@@ -274,7 +274,8 @@ ipcMain.handle('get-play-sessions', (_event, gameId: string) => {
 ipcMain.handle('get-stats', () => {
   const gameCount = db.getGameCount();
   const totalPlayTime = db.getTotalPlayTime();
-  return { ...gameCount, totalPlayTime };
+  const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf-8'));
+  return { ...gameCount, totalPlayTime, version: pkg.version };
 });
 
 // Steam Store Info

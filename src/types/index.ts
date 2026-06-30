@@ -116,7 +116,7 @@ export interface ElectronAPI {
   closeWindow: () => void;
   getCachedAchievements: (gameId: string) => Promise<CachedAchievement[]>;
   getPlaySessions: (gameId: string) => Promise<PlaySession[]>;
-  getStats: () => Promise<{ total: number; steam: number; xbox: number; epic: number; gog: number; mods: number; other: number; totalPlayTime: number }>;
+  getStats: () => Promise<{ total: number; steam: number; xbox: number; epic: number; gog: number; mods: number; other: number; totalPlayTime: number; version: string }>;
   getSteamStoreInfo: (steamAppId: string) => Promise<SteamStoreInfo | null>;
   hasStellarBladeSave: () => Promise<boolean>;
   parseStellarBladeSave: () => Promise<StellarBladeSaveData | null>;

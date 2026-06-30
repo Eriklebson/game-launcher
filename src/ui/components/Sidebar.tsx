@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { FiGrid, FiPlus, FiRefreshCw, FiTool } from 'react-icons/fi'
 
 type Page = 'library' | 'mods' | 'add-game'
@@ -12,6 +13,12 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ currentPage, onNavigate, gameCount, modsCount, scanning, onRescan }: SidebarProps) {
+  const [version, setVersion] = useState('')
+
+  useEffect(() => {
+    window.electronAPI.getStats().then(stats => setVersion(stats.version))
+  }, [])
+
   const menuItems: { page: Page; icon: React.ReactNode; label: string; count?: number }[] = [
     { page: 'library', icon: <FiGrid size={20} />, label: 'Biblioteca', count: gameCount },
     { page: 'mods', icon: <FiTool size={20} />, label: 'Mods', count: modsCount },
@@ -40,7 +47,7 @@ export default function Sidebar({ currentPage, onNavigate, gameCount, modsCount,
         ))}
       </nav>
 
-      <div className="p-4 border-t border-white/5">
+      <div className="p-4 border-t border-white/5 space-y-3">
         <button
           onClick={onRescan}
           disabled={scanning}
@@ -49,6 +56,9 @@ export default function Sidebar({ currentPage, onNavigate, gameCount, modsCount,
           <FiRefreshCw size={16} className={scanning ? 'animate-spin' : ''} />
           {scanning ? 'Escaneando...' : 'Varrer Jogos'}
         </button>
+        {version && (
+          <p className="text-center text-[11px] text-steam-text/30">v{version}</p>
+        )}
       </div>
     </aside>
   )
