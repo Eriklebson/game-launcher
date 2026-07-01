@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: #0e1621;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #c7d5e0;
+      overflow: hidden;
+      user-select: none;
+    }
+    .titlebar {
+      height: 32px;
+      background: #171a21;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      -webkit-app-region: drag;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .titlebar-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #66c0f4;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .titlebar-btn {
+      -webkit-app-region: no-drag;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #8b9bb4;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .titlebar-btn:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+    .container {
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-rows: auto auto;
+      gap: 10px;
+      height: calc(100vh - 32px);
+      align-content: start;
+    }
+    .card {
+      background: rgba(30, 42, 58, 0.6);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .card-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+    .card-icon.cpu { background: rgba(102, 192, 244, 0.2); }
+    .card-icon.gpu { background: rgba(164, 208, 7, 0.2); }
+    .card-icon.ram { background: rgba(192, 132, 252, 0.2); }
+    .card-icon.temp { background: rgba(239, 68, 68, 0.2); }
+    .card-icon.fps { background: rgba(164, 208, 7, 0.3); }
+    .card-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #8b9bb4;
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .stat-label {
+      font-size: 10px;
+      color: #8b9bb4;
+    }
+    .progress-container {
+      margin-top: auto;
+      padding-top: 8px;
+    }
+    .progress-bar {
+      height: 6px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.5s ease, background-color 0.3s;
+    }
+    .progress-fill.low { background: #a4d007; }
+    .progress-fill.medium { background: #cf6a32; }
+    .progress-fill.high { background: #d94126; }
+    .progress-info {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 4px;
+      font-size: 9px;
+      color: #8b9bb4;
+    }
+    .full-width {
+      grid-column: 1 / -1;
+    }
+    .temp-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .temp-item {
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+      padding: 8px;
+      text-align: center;
+    }
+    .temp-value {
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .temp-value.cool { color: #66c0f4; }
+    .temp-value.warm { color: #a4d007; }
+    .temp-value.hot { color: #cf6a32; }
+    .temp-value.danger { color: #d94126; }
+    .temp-label {
+      font-size: 9px;
+      color: #8b9bb4;
+      margin-top: 2px;
+    }
+    .fps-value {
+      font-size: 36px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 2px;
+      font-variant-numeric: tabular-nums;
+    }
+    .fps-value.fps-good { color: #a4d007; }
+    .fps-value.fps-ok { color: #cf6a32; }
+    .fps-value.fps-bad { color: #d94126; }
+    .fps-value.fps-na { color: #8b9bb4; font-size: 16px; }
+    .fps-labels {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .fps-badge {
+      font-size: 9px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .fps-badge.min { background: rgba(164,208,7,0.15); color: #a4d007; }
+    .fps-badge.avg { background: rgba(102,192,244,0.15); color: #66c0f4; }
+    .fps-badge.max { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .no-data {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #8b9bb4;
+      font-size: 12px;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div class="titlebar">
+    <span class="titlebar-title">
+      <span>📊</span>
+      Monitor de Hardware
+    </span>
+    <div class="titlebar-btn" onclick="window.electronAPI.closeMonitor()">✕</div>
+  </div>
+
+  <div class="container">
+    <!-- CPU Card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon cpu">🖥️</div>
+        <span class="card-title">Processador</span>
+      </div>
+      <div class="stat-value" id="cpuUsage">--%</div>
+      <div class="stat-label" id="cpuModel">Carregando...</div>
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div class="progress-fill" id="cpuBar" style="width: 0%"></div>
+        </div>
+        <div class="progress-info">
+          <span>Uso</span>
+          <span id="cpuCores">--</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- GPU Card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon gpu">🎮</div>
+        <span class="card-title">Placa de Vídeo</span>
+      </div>
+      <div class="stat-value" id="gpuUsage">--%</div>
+      <div class="stat-label" id="gpuModel">Carregando...</div>
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div class="progress-fill" id="gpuBar" style="width: 0%"></div>
+        </div>
+        <div class="progress-info">
+          <span>Uso</span>
+          <span id="gpuMem">--</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- FPS Card -->
+    <div class="card" style="grid-column: 3; grid-row: 1 / 3;">
+      <div class="card-header">
+        <div class="card-icon fps">⚡</div>
+        <span class="card-title">FPS</span>
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+        <div class="fps-value fps-na" id="fpsValue">N/A</div>
+        <div class="stat-label" id="fpsSource">Aguardando jogo...</div>
+        <div class="fps-labels" id="fpsLabels" style="display:none;">
+          <span class="fps-badge min">MIN <span id="fpsMin">--</span></span>
+          <span class="fps-badge avg">MÉDIA <span id="fpsAvg">--</span></span>
+          <span class="fps-badge max">MAX <span id="fpsMax">--</span></span>
+        </div>
+        <div id="fpsHelp" style="margin-top: 8px; text-align: center; display: none;">
+          <div style="font-size: 9px; color: #8b9bb4; line-height: 1.4; max-width: 140px;">
+            Clique abaixo para iniciar monitoramento FPS
+          </div>
+          <button id="fpsStartBtn" onclick="startFps()" style="
+            margin-top: 6px; padding: 4px 10px; font-size: 10px; font-weight: 600;
+            background: rgba(164,208,7,0.2); color: #a4d007; border: 1px solid rgba(164,208,7,0.3);
+            border-radius: 6px; cursor: pointer; transition: all 0.2s;
+          " onmouseover="this.style.background='rgba(164,208,7,0.35)'" onmouseout="this.style.background='rgba(164,208,7,0.2)'">
+            ▶ Iniciar FPS
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RAM Card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon ram">💾</div>
+        <span class="card-title">Memória RAM</span>
+      </div>
+      <div class="stat-value" id="ramUsage">--%</div>
+      <div class="stat-label" id="ramDetail">Carregando...</div>
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div class="progress-fill" id="ramBar" style="width: 0%"></div>
+        </div>
+        <div class="progress-info">
+          <span>Uso</span>
+          <span id="ramTotal">--</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Temperature Card -->
+    <div class="card full-width">
+      <div class="card-header">
+        <div class="card-icon temp">🌡️</div>
+        <span class="card-title">Temperaturas</span>
+      </div>
+      <div class="temp-grid">
+        <div class="temp-item">
+          <div class="temp-value" id="cpuTemp">--°</div>
+          <div class="temp-label">CPU</div>
+        </div>
+        <div class="temp-item">
+          <div class="temp-value" id="gpuTemp">--°</div>
+          <div class="temp-label">GPU</div>
+        </div>
+      </div>
+      <div class="stat-label" style="margin-top: 8px; text-align: center;" id="tempStatus">Atualizando...</div>
+    </div>
+  </div>
+
+  <script>
+    let detectedGame = null;
+
+    function startFps() {
+      if (detectedGame) {
+        window.electronAPI.startFpsMonitor(detectedGame);
+        document.getElementById('fpsHelp').style.display = 'none';
+      }
+    }
+
+    function updateUI(data) {
+      // CPU
+      if (data.cpu) {
+        document.getElementById('cpuUsage').textContent = data.cpu.usage + '%';
+        document.getElementById('cpuModel').textContent = data.cpu.model || 'CPU';
+        document.getElementById('cpuCores').textContent = data.cpu.cores + ' threads';
+        const cpuBar = document.getElementById('cpuBar');
+        cpuBar.style.width = data.cpu.usage + '%';
+        cpuBar.className = 'progress-fill ' + getLevel(data.cpu.usage);
+      }
+
+      // GPU
+      if (data.gpu) {
+        document.getElementById('gpuUsage').textContent = data.gpu.usage + '%';
+        document.getElementById('gpuModel').textContent = data.gpu.model || 'GPU';
+        document.getElementById('gpuMem').textContent = data.gpu.memory || '--';
+        const gpuBar = document.getElementById('gpuBar');
+        gpuBar.style.width = data.gpu.usage + '%';
+        gpuBar.className = 'progress-fill ' + getLevel(data.gpu.usage);
+      }
+
+      // FPS
+      if (data.fps !== undefined) {
+        const fpsEl = document.getElementById('fpsValue');
+        const fpsSrc = document.getElementById('fpsSource');
+        const fpsLabels = document.getElementById('fpsLabels');
+        const fpsHelp = document.getElementById('fpsHelp');
+
+        detectedGame = data.detectedGame || null;
+
+        if (data.fps > 0) {
+          fpsEl.textContent = data.fps;
+          fpsEl.className = 'fps-value ' + getFpsLevel(data.fps);
+          fpsSrc.textContent = data.fpsSource || 'PresentMon';
+          fpsHelp.style.display = 'none';
+
+          document.getElementById('fpsMin').textContent = data.fpsMin || '--';
+          document.getElementById('fpsAvg').textContent = data.fpsAvg || '--';
+          document.getElementById('fpsMax').textContent = data.fpsMax || '--';
+          fpsLabels.style.display = 'flex';
+        } else {
+          fpsEl.textContent = 'N/A';
+          fpsEl.className = 'fps-value fps-na';
+          fpsLabels.style.display = 'none';
+
+          const src = data.fpsSource || 'Off';
+          if (src === 'Off' && detectedGame) {
+            fpsSrc.textContent = detectedGame + ' detectado';
+            fpsHelp.style.display = 'block';
+          } else if (src === 'Off') {
+            fpsSrc.textContent = 'Aguardando jogo...';
+            fpsHelp.style.display = 'none';
+          } else {
+            fpsSrc.textContent = src;
+            fpsHelp.style.display = 'none';
+          }
+        }
+      }
+
+      // RAM
+      if (data.ram) {
+        document.getElementById('ramUsage').textContent = data.ram.usage + '%';
+        document.getElementById('ramDetail').textContent = data.ram.used + ' / ' + data.ram.total;
+        document.getElementById('ramTotal').textContent = data.ram.available + ' livre';
+        const ramBar = document.getElementById('ramBar');
+        ramBar.style.width = data.ram.usage + '%';
+        ramBar.className = 'progress-fill ' + getLevel(data.ram.usage);
+      }
+
+      // Temperature
+      if (data.temps) {
+        setTemp('cpuTemp', data.temps.cpu, 'CPU');
+        setTemp('gpuTemp', data.temps.gpu, 'GPU');
+        document.getElementById('tempStatus').textContent = 'Tempo ativo: ' + (data.uptime || '--');
+      }
+    }
+
+    function setTemp(id, temp, label) {
+      const el = document.getElementById(id);
+      if (temp !== null && temp !== undefined) {
+        el.textContent = temp + '°';
+        el.className = 'temp-value ' + getTempLevel(temp);
+        el.title = '';
+      } else {
+        el.textContent = '--°';
+        el.className = 'temp-value';
+        if (label === 'CPU') {
+          el.title = 'CPU temp requer LibreHardwareMonitor ou HWiNFO rodando em background';
+        }
+      }
+    }
+
+    function getLevel(value) {
+      if (value < 60) return 'low';
+      if (value < 85) return 'medium';
+      return 'high';
+    }
+
+    function getTempLevel(temp) {
+      if (temp < 50) return 'cool';
+      if (temp < 70) return 'warm';
+      if (temp < 85) return 'hot';
+      return 'danger';
+    }
+
+    function getFpsLevel(fps) {
+      if (fps >= 60) return 'fps-good';
+      if (fps >= 30) return 'fps-ok';
+      return 'fps-bad';
+    }
+
+    // Request data on load and every 2 seconds
+    window.electronAPI.requestHardwareStats();
+    setInterval(() => {
+      window.electronAPI.requestHardwareStats();
+    }, 2000);
+
+    window.electronAPI.onHardwareStats((data) => {
+      updateUI(data);
+    });
+  </script>
+</body>
+</html>

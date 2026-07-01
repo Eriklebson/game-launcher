@@ -134,6 +134,10 @@ export default function App() {
     })
   }, [])
 
+  const handleOpenMonitor = useCallback(() => {
+    window.electronAPI.openMonitor()
+  }, [])
+
   const filteredGames = currentPage === 'mods'
     ? games.filter(g => g.platform === 'mods')
     : games.filter(g => g.platform !== 'mods')
@@ -160,6 +164,7 @@ export default function App() {
             scanning={scanning}
             onRescan={handleRescan}
             onTestNotification={handleTestNotification}
+            onOpenMonitor={handleOpenMonitor}
           />
           <main className="flex-1 overflow-hidden">
             <GameDetail
@@ -190,6 +195,7 @@ export default function App() {
           scanning={scanning}
           onRescan={handleRescan}
           onTestNotification={handleTestNotification}
+          onOpenMonitor={handleOpenMonitor}
         />
         <main className="flex-1 overflow-auto">
           {(currentPage === 'library' || currentPage === 'mods') && (

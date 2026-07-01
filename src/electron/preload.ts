@@ -23,4 +23,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onNotificationHidden: () => ipcRenderer.send('notification-hidden'),
   onShowAchievement: (callback: (data: any) => void) => ipcRenderer.on('show-achievement', (_event, data) => callback(data)),
   onHideAchievement: (callback: () => void) => ipcRenderer.on('hide-achievement', () => callback()),
+  // Hardware Monitor
+  openMonitor: () => ipcRenderer.send('open-monitor'),
+  closeMonitor: () => ipcRenderer.send('close-monitor'),
+  requestHardwareStats: () => ipcRenderer.send('request-hardware-stats'),
+  onHardwareStats: (callback: (data: any) => void) => ipcRenderer.on('hardware-stats', (_event, data) => callback(data)),
+  // FPS Monitoring (PresentMon)
+  startFpsMonitor: (processName: string) => ipcRenderer.send('start-fps-monitor', processName),
+  stopFpsMonitor: () => ipcRenderer.send('stop-fps-monitor'),
+  checkFpsAvailability: () => ipcRenderer.sendSync('check-fps-availability'),
 });

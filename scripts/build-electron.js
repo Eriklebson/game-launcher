@@ -44,4 +44,30 @@ if (fs.existsSync(notifSrc)) {
   console.log('Copied notification.html');
 }
 
+// Copy monitor.html for hardware monitoring
+const monitorSrc = path.join(__dirname, '..', 'src', 'electron', 'monitor.html');
+const monitorDest = path.join(outDir, 'monitor.html');
+if (fs.existsSync(monitorSrc)) {
+  fs.copyFileSync(monitorSrc, monitorDest);
+  console.log('Copied monitor.html');
+}
+
+// Copy PresentMon for FPS monitoring
+const pmSrc = path.join(__dirname, '..', 'tools', 'PresentMon-2.5.1-x64.exe');
+const pmDest = path.join(outDir, 'PresentMon-2.5.1-x64.exe');
+if (fs.existsSync(pmSrc)) {
+  try {
+    fs.copyFileSync(pmSrc, pmDest);
+    console.log('Copied PresentMon');
+  } catch (e) {
+    if (e.code === 'EBUSY') {
+      console.log('PresentMon locked, skipping copy (already exists)');
+    } else {
+      throw e;
+    }
+  }
+} else {
+  console.warn('PresentMon not found at', pmSrc, '- FPS monitoring will be unavailable');
+}
+
 console.log('Electron files built successfully!');

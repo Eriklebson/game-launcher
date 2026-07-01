@@ -170,6 +170,53 @@
 
     let hideTimeout = null;
 
+    // Steam-like achievement sound using Web Audio API
+    function playAchievementSound() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // First note (higher)
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+        gain1.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+        osc1.connect(gain1);
+        gain1.connect(audioCtx.destination);
+        osc1.start(audioCtx.currentTime);
+        osc1.stop(audioCtx.currentTime + 0.15);
+
+        // Second note (lower, longer)
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(1320, audioCtx.currentTime + 0.08); // E6
+        gain2.gain.setValueAtTime(0, audioCtx.currentTime);
+        gain2.gain.setValueAtTime(0.3, audioCtx.currentTime + 0.08);
+        gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+        osc2.connect(gain2);
+        gain2.connect(audioCtx.destination);
+        osc2.start(audioCtx.currentTime + 0.08);
+        osc2.stop(audioCtx.currentTime + 0.4);
+
+        // Third note (chord finish)
+        const osc3 = audioCtx.createOscillator();
+        const gain3 = audioCtx.createGain();
+        osc3.type = 'sine';
+        osc3.frequency.setValueAtTime(1760, audioCtx.currentTime + 0.2); // A6
+        gain3.gain.setValueAtTime(0, audioCtx.currentTime);
+        gain3.gain.setValueAtTime(0.2, audioCtx.currentTime + 0.2);
+        gain3.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+        osc3.connect(gain3);
+        gain3.connect(audioCtx.destination);
+        osc3.start(audioCtx.currentTime + 0.2);
+        osc3.stop(audioCtx.currentTime + 0.6);
+      } catch (e) {
+        console.log('Audio not supported');
+      }
+    }
+
     window.electronAPI.onShowAchievement((data) => {
       nameEl.textContent = data.name;
       descEl.textContent = data.description;
@@ -188,6 +235,9 @@
       progressFill.style.animation = 'none';
       progressFill.offsetHeight; // Trigger reflow
       progressFill.style.animation = 'shrink 5s linear forwards';
+
+      // Play sound
+      playAchievementSound();
 
       // Show
       notification.classList.remove('hide');

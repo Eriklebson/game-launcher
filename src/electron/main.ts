@@ -2,9 +2,12 @@ import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import https from 'https';
+import * as os from 'os';
+import { exec } from 'child_process';
 import { scanAllGames } from './gameScanner';
 import * as db from './database';
 import { parseStellarBladeSave, hasStellarBladeSave } from './stellarBladeParser';
+import { fpsMonitor } from './fpsMonitor';
 
 const distPath = path.join(__dirname, '../dist/index.html');
 const isDev = !fs.existsSync(distPath);
@@ -113,6 +116,11 @@ function dbToGame(row: db.GameRow): Game {
 
 let mainWindow: BrowserWindow | null = null;
 let notificationWindow: BrowserWindow | null = null;
+let monitorWindow: BrowserWindow | null = null;
+
+// CPU usage tracking
+let lastCpuInfo = os.cpus();
+let cpuUsagePercent = 0;
 
 function createWindow(): void {
   const preloadPath = path.join(__dirname, 'preload.js');
@@ -177,10 +185,186 @@ function createNotificationWindow(): void {
   });
 }
 
+function createMonitorWindow(): void {
+  if (monitorWindow && !monitorWindow.isDestroyed()) {
+    monitorWindow.focus();
+    return;
+  }
+
+  const preloadPath = path.join(__dirname, 'preload.js');
+
+  monitorWindow = new BrowserWindow({
+    width: 520,
+    height: 480,
+    minWidth: 400,
+    minHeight: 420,
+    frame: false,
+    backgroundColor: '#0e1621',
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: preloadPath,
+    },
+  });
+
+  if (isDev) {
+    monitorWindow.loadFile(path.join(__dirname, '../src/electron/monitor.html'));
+  } else {
+    monitorWindow.loadFile(path.join(__dirname, 'monitor.html'));
+  }
+
+  monitorWindow.on('closed', () => {
+    monitorWindow = null;
+  });
+}
+
+// Hardware stats collection
+function getCpuUsage(): { usage: number; model: string; cores: number } {
+  const cpus = os.cpus();
+  let totalIdle = 0;
+  let totalTick = 0;
+
+  cpus.forEach((cpu, i) => {
+    for (const type in cpu.times) {
+      totalTick += cpu.times[type as keyof typeof cpu.times];
+    }
+    totalIdle += cpu.times.idle;
+  });
+
+  const idleDiff = totalIdle - lastCpuInfo.reduce((acc, cpu) => acc + cpu.times.idle, 0);
+  const totalDiff = totalTick - lastCpuInfo.reduce((acc, cpu) => {
+    let total = 0;
+    for (const type in cpu.times) {
+      total += cpu.times[type as keyof typeof cpu.times];
+    }
+    return acc + total;
+  }, 0);
+
+  cpuUsagePercent = totalDiff > 0 ? Math.round((1 - idleDiff / totalDiff) * 100) : 0;
+  lastCpuInfo = cpus;
+
+  return {
+    usage: cpuUsagePercent,
+    model: cpus[0]?.model.replace(/\s+/g, ' ').trim() || 'Unknown CPU',
+    cores: cpus.length,
+  };
+}
+
+function getGpuStats(): Promise<{ usage: number; model: string; memory: string; temp: number | null }> {
+  return new Promise((resolve) => {
+    exec('nvidia-smi --query-gpu=name,utilization.gpu,memory.used,memory.total,temperature.gpu --format=csv,noheader,nounits', { timeout: 3000 }, (error, stdout) => {
+      if (error) {
+        resolve({ usage: 0, model: 'N/A', memory: 'N/A', temp: null });
+        return;
+      }
+      const lines = stdout.trim().split('\n');
+      if (lines.length > 0) {
+        const parts = lines[0].split(',').map(s => s.trim());
+        resolve({
+          model: parts[0] || 'Unknown GPU',
+          usage: parseInt(parts[1]) || 0,
+          memory: parts[2] && parts[3] ? `${parts[2]}MB / ${parts[3]}MB` : 'N/A',
+          temp: parseInt(parts[4]) || null,
+        });
+      } else {
+        resolve({ usage: 0, model: 'N/A', memory: 'N/A', temp: null });
+      }
+    });
+  });
+}
+
+function getRamStats(): { usage: number; total: string; used: string; available: string } {
+  const totalBytes = os.totalmem();
+  const freeBytes = os.freemem();
+  const usedBytes = totalBytes - freeBytes;
+  const usage = Math.round((usedBytes / totalBytes) * 100);
+
+  return {
+    usage,
+    total: formatBytes(totalBytes),
+    used: formatBytes(usedBytes),
+    available: formatBytes(freeBytes),
+  };
+}
+
+function formatBytes(bytes: number): string {
+  const gb = bytes / (1024 * 1024 * 1024);
+  return gb.toFixed(1) + ' GB';
+}
+
+function getUptime(): string {
+  const seconds = os.uptime();
+  const hours = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  return `${hours}h ${mins}min`;
+}
+
+function getCpuTemp(): Promise<number | null> {
+  return new Promise((resolve) => {
+    // Strategy 1: Check if LibreHardwareMonitor is running (WMI namespace)
+    const lhmScript = `try {
+      $sensors = Get-CimInstance -Namespace "root/LibreHardwareMonitor" -Query "SELECT Value FROM Sensor WHERE SensorType='Temperature' AND Name LIKE '%CPU%'" -ErrorAction Stop
+      if ($sensors) { Write-Output ([math]::Round([double]$sensors[0].Value)) }
+      else { Write-Output "EMPTY" }
+    } catch { Write-Output "NOLHM" }`;
+
+    exec(`powershell -Command "${lhmScript.replace(/"/g, '\\"')}"`, { timeout: 3000 }, (error, stdout) => {
+      const val = stdout?.trim();
+      if (!error && val && val !== 'NOLHM' && val !== 'EMPTY') {
+        const temp = parseInt(val);
+        if (!isNaN(temp) && temp > 0 && temp < 200) {
+          resolve(temp);
+          return;
+        }
+      }
+
+      // Strategy 2: Check HWiNFO running (uses shared memory, try WMI)
+      const hwinfoScript = `try {
+        $proc = Get-Process -Name "HWiNFO64" -ErrorAction Stop
+        if ($proc) {
+          $wmi = Get-CimInstance -Namespace "root/WMI" -ClassName "MSAcpi_ThermalZoneTemperature" -ErrorAction SilentlyContinue
+          if ($wmi) { Write-Output ([math]::Round([double]$wmi[0].CurrentTemperature / 10 - 273.15)) }
+          else { Write-Output "HWINFO_NO_WMI" }
+        } else { Write-Output "NO_HWINFO" }
+      } catch { Write-Output "NO_HWINFO" }`;
+
+      exec(`powershell -Command "${hwinfoScript.replace(/"/g, '\\"')}"`, { timeout: 3000 }, (error2, stdout2) => {
+        const val2 = stdout2?.trim();
+        if (!error2 && val2 && !val2.startsWith('NO_') && !val2.startsWith('HWINFO_')) {
+          const temp = parseInt(val2);
+          if (!isNaN(temp) && temp > 0 && temp < 200) {
+            resolve(temp);
+            return;
+          }
+        }
+
+        // Strategy 3: Fallback to MSAcpi (works on some systems)
+        exec('powershell -Command "Get-CimInstance -Namespace root/WMI -ClassName MSAcpi_ThermalZoneTemperature -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty CurrentTemperature"', { timeout: 3000 }, (error3, stdout3) => {
+          if (error3 || !stdout3?.trim()) {
+            resolve(null);
+            return;
+          }
+          const match = stdout3.match(/(\d+)/);
+          if (match) {
+            const kelvin = parseInt(match[1]) / 10;
+            resolve(Math.round(kelvin - 273.15));
+          } else {
+            resolve(null);
+          }
+        });
+      });
+    });
+  });
+}
+
+// FPS Monitoring via PresentMon
+// PresentMon requires admin - launched via Start-Process -Verb RunAs
+
 app.whenReady().then(async () => {
   await db.initDatabase(app.getPath('userData'));
   createWindow();
   createNotificationWindow();
+  startAchievementPolling();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -366,4 +550,216 @@ ipcMain.on('notification-hidden', () => {
   if (notificationWindow && !notificationWindow.isDestroyed()) {
     notificationWindow.hide();
   }
+});
+
+// ==================== Background Achievement Polling ====================
+// Tracks known achievements to detect new ones while games are running
+const knownAchievements: Map<string, Set<string>> = new Map();
+
+function startAchievementPolling(): void {
+  setInterval(async () => {
+    // Check which game is running
+    const runningGameExe = await detectRunningGameProcess();
+    if (!runningGameExe) return;
+
+    // Find the game in DB by exe name
+    const games = db.getGames();
+    const game = games.find(g => {
+      const parts = g.executable_path.split(/[\\/]/);
+      const exe = parts[parts.length - 1].replace(/\.exe$/i, '');
+      return exe.toLowerCase() === runningGameExe.replace(/\.exe$/i, '').toLowerCase();
+    });
+    if (!game) return;
+
+    // Stellar Blade: re-parse save file for new trophies
+    if (game.steam_app_id === '3489700') {
+      try {
+        const saveData = parseStellarBladeSave();
+        if (!saveData) return;
+
+        const gameKey = `sb_${game.id}`;
+        const previousTrophies = knownAchievements.get(gameKey) || new Set<string>();
+
+        for (const trophy of saveData.trophies) {
+          if (trophy.bCompleted && !previousTrophies.has(trophy.name)) {
+            // New trophy unlocked!
+            previousTrophies.add(trophy.name);
+            knownAchievements.set(gameKey, previousTrophies);
+
+            // Send notification
+            if (notificationWindow && !notificationWindow.isDestroyed()) {
+              notificationWindow.webContents.send('show-achievement', {
+                name: trophy.name,
+                description: `Stellar Blade - ${trophy.steamAchievement}`,
+                gameName: game.name,
+                icon: undefined,
+              });
+              notificationWindow.showInactive();
+            }
+          }
+        }
+      } catch {}
+    }
+
+    // Steam games: check cached achievements for new ones
+    if (game.steam_app_id && game.steam_app_id !== '3489700') {
+      const achievements = db.getAchievements(game.id);
+      if (!achievements || achievements.length === 0) return;
+
+      const gameKey = `steam_${game.id}`;
+      const previousAchs = knownAchievements.get(gameKey) || new Set<string>();
+
+      for (const ach of achievements) {
+        if (ach.achieved === 1 && !previousAchs.has(ach.apiname)) {
+          previousAchs.add(ach.apiname);
+          knownAchievements.set(gameKey, previousAchs);
+
+          if (notificationWindow && !notificationWindow.isDestroyed()) {
+            notificationWindow.webContents.send('show-achievement', {
+              name: ach.name,
+              description: ach.description || '',
+              gameName: game.name,
+              icon: ach.icon || undefined,
+            });
+            notificationWindow.showInactive();
+          }
+        }
+      }
+    }
+  }, 15000); // Check every 15 seconds
+}
+
+// Monitor Window
+ipcMain.on('open-monitor', () => {
+  createMonitorWindow();
+});
+
+ipcMain.on('close-monitor', () => {
+  if (monitorWindow && !monitorWindow.isDestroyed()) {
+    monitorWindow.close();
+  }
+});
+
+// Detect running game processes and auto-start FPS monitor
+function detectRunningGameProcess(): Promise<string | null> {
+  return new Promise((resolve) => {
+    const games = db.getGames();
+    const exeNames = games
+      .map(g => {
+        const parts = g.executable_path.split(/[\\/]/);
+        return parts[parts.length - 1].replace(/\.exe$/i, '');
+      })
+      .filter(name => name.length > 0);
+
+    if (exeNames.length === 0) {
+      resolve(null);
+      return;
+    }
+
+    const tasklistCmd = 'tasklist /FO CSV /NH';
+    exec(tasklistCmd, { timeout: 3000 }, (error, stdout) => {
+      if (error || !stdout) {
+        resolve(null);
+        return;
+      }
+
+      const runningLines = stdout.trim().split('\n');
+
+      // Exact match first
+      for (const exeName of exeNames) {
+        const found = runningLines.some(line =>
+          line.toLowerCase().includes(`"${exeName.toLowerCase()}.exe"`)
+        );
+        if (found) {
+          resolve(exeName + '.exe');
+          return;
+        }
+      }
+
+      // Partial match: many games have launcher exe (SB.exe) but different process name (SB-Win64-Shipping.exe)
+      // Check if any running process starts with the same base name
+      for (const exeName of exeNames) {
+        const baseName = exeName.toLowerCase();
+        if (baseName.length < 2) continue;
+        const found = runningLines.some(line => {
+          const procMatch = line.match(/"([^"]+\.exe)"/i);
+          if (!procMatch) return false;
+          const procName = procMatch[1].toLowerCase().replace(/\.exe$/i, '');
+          return procName.startsWith(baseName) && procName !== baseName;
+        });
+        if (found) {
+          const matchLine = runningLines.find(line => {
+            const procMatch = line.match(/"([^"]+\.exe)"/i);
+            if (!procMatch) return false;
+            const procName = procMatch[1].toLowerCase().replace(/\.exe$/i, '');
+            return procName.startsWith(baseName) && procName !== baseName;
+          });
+          if (matchLine) {
+            const procMatch = matchLine.match(/"([^"]+\.exe)"/i);
+            if (procMatch) {
+              resolve(procMatch[1]);
+              return;
+            }
+          }
+        }
+      }
+
+      resolve(null);
+    });
+  });
+}
+
+let lastDetectedGame: string | null = null;
+
+ipcMain.on('request-hardware-stats', async () => {
+  if (!monitorWindow || monitorWindow.isDestroyed()) return;
+
+  const cpu = getCpuUsage();
+  const gpu = await getGpuStats();
+  const ram = getRamStats();
+  const cpuTemp = await getCpuTemp();
+
+  // Auto-detect running game and start FPS monitor
+  const runningGame = await detectRunningGameProcess();
+  if (runningGame && runningGame !== lastDetectedGame) {
+    // New game detected — start FPS monitoring
+    lastDetectedGame = runningGame;
+    fpsMonitor.startMonitoring(runningGame);
+  } else if (!runningGame && lastDetectedGame) {
+    // Game exited — stop FPS monitoring
+    lastDetectedGame = null;
+    fpsMonitor.stopMonitoring();
+  }
+
+  const fpsData = fpsMonitor.getStats();
+
+  monitorWindow.webContents.send('hardware-stats', {
+    cpu,
+    gpu,
+    ram,
+    temps: {
+      cpu: cpuTemp,
+      gpu: gpu.temp,
+    },
+    uptime: getUptime(),
+    fps: fpsData.current,
+    fpsMin: fpsData.min,
+    fpsMax: fpsData.max,
+    fpsAvg: fpsData.avg,
+    fpsSource: fpsData.source,
+    detectedGame: runningGame || null,
+  });
+});
+
+// FPS Monitoring control
+ipcMain.on('start-fps-monitor', (_event, processName: string) => {
+  fpsMonitor.startMonitoring(processName);
+});
+
+ipcMain.on('stop-fps-monitor', () => {
+  fpsMonitor.stopMonitoring();
+});
+
+ipcMain.on('check-fps-availability', (event) => {
+  event.returnValue = fpsMonitor.isAvailable();
 });

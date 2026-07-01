@@ -9,3 +9,4 @@ release/
 steam-config.json
 .DS_Store
 Thumbs.db
+tools/

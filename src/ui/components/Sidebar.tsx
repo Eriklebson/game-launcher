@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { FiGrid, FiPlus, FiRefreshCw, FiTool, FiMenu, FiX, FiAward } from 'react-icons/fi'
+import { FiGrid, FiPlus, FiRefreshCw, FiTool, FiMenu, FiX, FiAward, FiMonitor } from 'react-icons/fi'
 
 type Page = 'library' | 'mods' | 'add-game'
 
@@ -11,9 +11,10 @@ interface SidebarProps {
   scanning: boolean
   onRescan: () => void
   onTestNotification?: () => void
+  onOpenMonitor?: () => void
 }
 
-export default function Sidebar({ currentPage, onNavigate, gameCount, modsCount, scanning, onRescan, onTestNotification }: SidebarProps) {
+export default function Sidebar({ currentPage, onNavigate, gameCount, modsCount, scanning, onRescan, onTestNotification, onOpenMonitor }: SidebarProps) {
   const [version, setVersion] = useState('')
   const [collapsed, setCollapsed] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
@@ -151,6 +152,15 @@ export default function Sidebar({ currentPage, onNavigate, gameCount, modsCount,
             >
               <FiAward size={12} />
               Testar Notificação
+            </button>
+          )}
+          {onOpenMonitor && (
+            <button
+              onClick={onOpenMonitor}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-steam-green/10 hover:bg-steam-green/20 text-steam-green rounded-lg text-xs font-medium transition-all duration-200"
+            >
+              <FiMonitor size={12} />
+              Monitor de Hardware
             </button>
           )}
           {version && (

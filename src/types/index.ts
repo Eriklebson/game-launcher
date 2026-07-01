@@ -126,6 +126,15 @@ export interface ElectronAPI {
   onNotificationHidden: () => void;
   onShowAchievement: (callback: (data: { name: string; description: string; gameName: string; icon?: string }) => void) => void;
   onHideAchievement: (callback: () => void) => void;
+  // Hardware Monitor
+  openMonitor: () => void;
+  closeMonitor: () => void;
+  requestHardwareStats: () => void;
+  onHardwareStats: (callback: (data: { cpu: { usage: number; model: string; cores: number }; gpu: { usage: number; model: string; memory: string; temp: number | null }; ram: { usage: number; total: string; used: string; available: string }; temps: { cpu: number | null; gpu: number | null }; uptime: string; fps: number; fpsMin: number; fpsMax: number; fpsAvg: number; fpsSource: string }) => void) => void;
+  // FPS Monitoring (PresentMon)
+  startFpsMonitor: (processName: string) => void;
+  stopFpsMonitor: () => void;
+  checkFpsAvailability: () => boolean;
 }
 
 declare global {
