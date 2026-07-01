@@ -32,4 +32,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   startFpsMonitor: (processName: string) => ipcRenderer.send('start-fps-monitor', processName),
   stopFpsMonitor: () => ipcRenderer.send('stop-fps-monitor'),
   checkFpsAvailability: () => ipcRenderer.sendSync('check-fps-availability'),
+  // CPU temp elevation
+  elevateCpuTemp: () => ipcRenderer.invoke('elevate-cpu-temp'),
 });

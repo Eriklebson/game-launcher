@@ -299,59 +299,107 @@ function getUptime(): string {
   return `${hours}h ${mins}min`;
 }
 
+// Temperature cache - avoids spawning PowerShell every 2s
+let tempCache: { cpu: number | null; gpu: number | null; cpuNeedsElevation: boolean } = { cpu: null, gpu: null, cpuNeedsElevation: false };
+let lastTempRead = 0;
+const TEMP_CACHE_MS = 4000;
+
+function getTempScriptPath(): string {
+  return isDev
+    ? path.join(__dirname, '..', 'tools', 'read-temp.ps1')
+    : path.join(__dirname, 'tools', 'read-temp.ps1');
+}
+
 function getCpuTemp(): Promise<number | null> {
   return new Promise((resolve) => {
-    // Strategy 1: Check if LibreHardwareMonitor is running (WMI namespace)
-    const lhmScript = `try {
-      $sensors = Get-CimInstance -Namespace "root/LibreHardwareMonitor" -Query "SELECT Value FROM Sensor WHERE SensorType='Temperature' AND Name LIKE '%CPU%'" -ErrorAction Stop
-      if ($sensors) { Write-Output ([math]::Round([double]$sensors[0].Value)) }
-      else { Write-Output "EMPTY" }
-    } catch { Write-Output "NOLHM" }`;
+    const now = Date.now();
+    if (tempCache.cpu !== null && now - lastTempRead < TEMP_CACHE_MS) {
+      resolve(tempCache.cpu);
+      return;
+    }
 
-    exec(`powershell -Command "${lhmScript.replace(/"/g, '\\"')}"`, { timeout: 3000 }, (error, stdout) => {
-      const val = stdout?.trim();
-      if (!error && val && val !== 'NOLHM' && val !== 'EMPTY') {
-        const temp = parseInt(val);
-        if (!isNaN(temp) && temp > 0 && temp < 200) {
-          resolve(temp);
-          return;
-        }
+    const scriptPath = getTempScriptPath();
+    if (!fs.existsSync(scriptPath)) {
+      resolve(tempCache.cpu);
+      return;
+    }
+
+    exec(`powershell -ExecutionPolicy Bypass -NoProfile -File "${scriptPath}"`, { timeout: 5000 }, (error, stdout) => {
+      if (error || !stdout?.trim()) {
+        resolve(tempCache.cpu);
+        return;
       }
 
-      // Strategy 2: Check HWiNFO running (uses shared memory, try WMI)
-      const hwinfoScript = `try {
-        $proc = Get-Process -Name "HWiNFO64" -ErrorAction Stop
-        if ($proc) {
-          $wmi = Get-CimInstance -Namespace "root/WMI" -ClassName "MSAcpi_ThermalZoneTemperature" -ErrorAction SilentlyContinue
-          if ($wmi) { Write-Output ([math]::Round([double]$wmi[0].CurrentTemperature / 10 - 273.15)) }
-          else { Write-Output "HWINFO_NO_WMI" }
-        } else { Write-Output "NO_HWINFO" }
-      } catch { Write-Output "NO_HWINFO" }`;
+      try {
+        const data = JSON.parse(stdout.trim());
+        lastTempRead = now;
 
-      exec(`powershell -Command "${hwinfoScript.replace(/"/g, '\\"')}"`, { timeout: 3000 }, (error2, stdout2) => {
-        const val2 = stdout2?.trim();
-        if (!error2 && val2 && !val2.startsWith('NO_') && !val2.startsWith('HWINFO_')) {
-          const temp = parseInt(val2);
-          if (!isNaN(temp) && temp > 0 && temp < 200) {
-            resolve(temp);
-            return;
-          }
+        // New format: { cpu: { name, temp }, gpu: { name, temp } }
+        if (data.cpu?.temp > 0) {
+          tempCache.cpu = data.cpu.temp;
+          tempCache.cpuNeedsElevation = false;
+        } else if (data.cpu === null || data.cpu?.temp === 0) {
+          tempCache.cpu = null;
+          tempCache.cpuNeedsElevation = true;
         }
 
-        // Strategy 3: Fallback to MSAcpi (works on some systems)
-        exec('powershell -Command "Get-CimInstance -Namespace root/WMI -ClassName MSAcpi_ThermalZoneTemperature -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty CurrentTemperature"', { timeout: 3000 }, (error3, stdout3) => {
-          if (error3 || !stdout3?.trim()) {
-            resolve(null);
-            return;
-          }
-          const match = stdout3.match(/(\d+)/);
-          if (match) {
-            const kelvin = parseInt(match[1]) / 10;
-            resolve(Math.round(kelvin - 273.15));
+        // GPU from LHM as backup (nvidia-smi is primary)
+        if (data.gpu?.temp > 0) {
+          tempCache.gpu = data.gpu.temp;
+        }
+
+        resolve(tempCache.cpu);
+      } catch {
+        resolve(tempCache.cpu);
+      }
+    });
+  });
+}
+
+function getGpuTempFromLHM(): number | null {
+  return tempCache.gpu;
+}
+
+function cpuTempNeedsElevation(): boolean {
+  return tempCache.cpuNeedsElevation;
+}
+
+function elevateCpuTemp(): Promise<boolean> {
+  return new Promise((resolve) => {
+    const scriptPath = getTempScriptPath();
+    if (!fs.existsSync(scriptPath)) {
+      resolve(false);
+      return;
+    }
+
+    // Run script elevated with -Elevated flag (writes to temp file)
+    const psCommand = `Start-Process powershell -ArgumentList '-ExecutionPolicy Bypass -NoProfile -File "${scriptPath}" -Elevated' -Verb RunAs -Wait -WindowStyle Hidden`;
+    exec(`powershell -Command "${psCommand.replace(/"/g, '\\"')}"`, { timeout: 15000 }, (error) => {
+      if (error) {
+        resolve(false);
+        return;
+      }
+
+      // Now read the result (script wrote to cache file)
+      exec(`powershell -ExecutionPolicy Bypass -NoProfile -File "${scriptPath}"`, { timeout: 5000 }, (error2, stdout) => {
+        if (error2 || !stdout?.trim()) {
+          resolve(false);
+          return;
+        }
+
+        try {
+          const data = JSON.parse(stdout.trim());
+          if (data.cpu?.temp > 0) {
+            tempCache.cpu = data.cpu.temp;
+            tempCache.cpuNeedsElevation = false;
+            lastTempRead = Date.now();
+            resolve(true);
           } else {
-            resolve(null);
+            resolve(false);
           }
-        });
+        } catch {
+          resolve(false);
+        }
       });
     });
   });
@@ -715,18 +763,20 @@ ipcMain.on('request-hardware-stats', async () => {
   if (!monitorWindow || monitorWindow.isDestroyed()) return;
 
   const cpu = getCpuUsage();
-  const gpu = await getGpuStats();
   const ram = getRamStats();
-  const cpuTemp = await getCpuTemp();
 
-  // Auto-detect running game and start FPS monitor
-  const runningGame = await detectRunningGameProcess();
+  // Run GPU, CPU temp, and game detection in parallel (don't block each other)
+  const [gpu, cpuTemp, runningGame] = await Promise.all([
+    getGpuStats(),
+    getCpuTemp(),
+    detectRunningGameProcess(),
+  ]);
   if (runningGame && runningGame !== lastDetectedGame) {
-    // New game detected — start FPS monitoring
+    console.log(`[FPS] Detected game: ${runningGame}`);
     lastDetectedGame = runningGame;
     fpsMonitor.startMonitoring(runningGame);
   } else if (!runningGame && lastDetectedGame) {
-    // Game exited — stop FPS monitoring
+    console.log(`[FPS] Game exited: ${lastDetectedGame}`);
     lastDetectedGame = null;
     fpsMonitor.stopMonitoring();
   }
@@ -739,8 +789,9 @@ ipcMain.on('request-hardware-stats', async () => {
     ram,
     temps: {
       cpu: cpuTemp,
-      gpu: gpu.temp,
+      gpu: gpu.temp || getGpuTempFromLHM(),
     },
+    cpuNeedsElevation: cpuTempNeedsElevation(),
     uptime: getUptime(),
     fps: fpsData.current,
     fpsMin: fpsData.min,
@@ -762,4 +813,10 @@ ipcMain.on('stop-fps-monitor', () => {
 
 ipcMain.on('check-fps-availability', (event) => {
   event.returnValue = fpsMonitor.isAvailable();
+});
+
+// CPU temp elevation (AMD needs admin for SMU)
+ipcMain.handle('elevate-cpu-temp', async () => {
+  const success = await elevateCpuTemp();
+  return success;
 });

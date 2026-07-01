@@ -70,4 +70,29 @@ if (fs.existsSync(pmSrc)) {
   console.warn('PresentMon not found at', pmSrc, '- FPS monitoring will be unavailable');
 }
 
+// Copy LibreHardwareMonitor folder + temp reader script for CPU/GPU temperature
+const lhmSrcDir = path.join(__dirname, '..', 'tools', 'LibreHardwareMonitor');
+const lhmDestDir = path.join(outDir, 'tools', 'LibreHardwareMonitor');
+if (fs.existsSync(lhmSrcDir)) {
+  fs.mkdirSync(lhmDestDir, { recursive: true });
+  // Copy ALL DLLs (LibreHardwareMonitorLib + dependencies like System.Memory.dll)
+  const lhmFiles = fs.readdirSync(lhmSrcDir).filter(f => f.endsWith('.dll') || f.endsWith('.config'));
+  for (const file of lhmFiles) {
+    fs.copyFileSync(path.join(lhmSrcDir, file), path.join(lhmDestDir, file));
+  }
+  console.log(`Copied ${lhmFiles.length} LibreHardwareMonitor files`);
+} else {
+  console.warn('LibreHardwareMonitor not found - CPU temp will be unavailable');
+}
+
+const readTempSrc = path.join(__dirname, '..', 'tools', 'read-temp.ps1');
+const readTempDest = path.join(outDir, 'tools', 'read-temp.ps1');
+if (fs.existsSync(readTempSrc)) {
+  if (!fs.existsSync(path.join(outDir, 'tools'))) {
+    fs.mkdirSync(path.join(outDir, 'tools'), { recursive: true });
+  }
+  fs.copyFileSync(readTempSrc, readTempDest);
+  console.log('Copied read-temp.ps1');
+}
+
 console.log('Electron files built successfully!');

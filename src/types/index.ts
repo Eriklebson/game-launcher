@@ -130,11 +130,13 @@ export interface ElectronAPI {
   openMonitor: () => void;
   closeMonitor: () => void;
   requestHardwareStats: () => void;
-  onHardwareStats: (callback: (data: { cpu: { usage: number; model: string; cores: number }; gpu: { usage: number; model: string; memory: string; temp: number | null }; ram: { usage: number; total: string; used: string; available: string }; temps: { cpu: number | null; gpu: number | null }; uptime: string; fps: number; fpsMin: number; fpsMax: number; fpsAvg: number; fpsSource: string }) => void) => void;
+  onHardwareStats: (callback: (data: { cpu: { usage: number; model: string; cores: number }; gpu: { usage: number; model: string; memory: string; temp: number | null }; ram: { usage: number; total: string; used: string; available: string }; temps: { cpu: number | null; gpu: number | null }; cpuNeedsElevation: boolean; uptime: string; fps: number; fpsMin: number; fpsMax: number; fpsAvg: number; fpsSource: string }) => void) => void;
   // FPS Monitoring (PresentMon)
   startFpsMonitor: (processName: string) => void;
   stopFpsMonitor: () => void;
   checkFpsAvailability: () => boolean;
+  // CPU temp elevation
+  elevateCpuTemp: () => Promise<boolean>;
 }
 
 declare global {

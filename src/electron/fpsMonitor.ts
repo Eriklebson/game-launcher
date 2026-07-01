@@ -21,12 +21,14 @@ class FpsMonitor {
   private cycleTimer: NodeJS.Timeout | null = null;
   private currentProcess: any = null;
   private cycleDuration = 2000;
+  private static readonly SESSION_NAME = 'GameLauncherFPS';
 
   constructor() {
     this.presentMonPath = this.findPresentMon();
     this.logFile = path.join(os.tmpdir(), 'game-launcher-fps-debug.log');
     try { fs.writeFileSync(this.logFile, ''); } catch {}
     this.log('FpsMonitor constructed, PM: ' + this.presentMonPath);
+    this.cleanupStaleSessions();
   }
 
   private log(msg: string): void {
@@ -79,15 +81,36 @@ class FpsMonitor {
     try { execSync('taskkill /F /IM PresentMon-2.5.1-x64.exe 2>nul', { windowsHide: true }); } catch {}
   }
 
+  private cleanupStaleSessions(): void {
+    try {
+      const output = execSync('logman query -ets 2>nul', { windowsHide: true, encoding: 'utf8' });
+      const lines = output.split('\n');
+      for (const line of lines) {
+        const match = line.match(/^\s*(fps_\d+|GameLauncherFPS)\s+/);
+        if (match) {
+          const name = match[1];
+          try { execSync(`logman stop "${name}" -ets 2>nul`, { windowsHide: true }); } catch {}
+          try { execSync(`logman delete "${name}" -ets 2>nul`, { windowsHide: true }); } catch {}
+        }
+      }
+    } catch {}
+  }
+
+  private killPMAndCleanSession(): void {
+    this.killExistingPM();
+    this.cleanupStaleSessions();
+  }
+
   private runCycle(): void {
     if (!this.isMonitoring) return;
 
     const csvPath = this.getCsvPath();
     try { fs.unlinkSync(csvPath); } catch {}
 
-    this.killExistingPM();
+    // Kill PM and clean ETW session before starting new one
+    this.killPMAndCleanSession();
 
-    const sessionName = 'fps_' + Date.now();
+    const sessionName = FpsMonitor.SESSION_NAME;
     const args = [
       '--output_file', csvPath,
       '--no_console_stats',
@@ -95,32 +118,37 @@ class FpsMonitor {
       '--stop_existing_session',
     ];
 
-    const pmProc = spawn(this.presentMonPath, args, {
-      windowsHide: true,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-
-    this.currentProcess = pmProc;
-
-    pmProc.on('error', (err) => {
-      this.log('PM error: ' + err.message);
-      if (this.isMonitoring) {
-        this.cycleTimer = setTimeout(() => this.runCycle(), 3000);
-      }
-    });
-
-    pmProc.on('close', (code) => {
-      this.currentProcess = null;
-    });
-
-    pmProc.unref();
-
+    // Wait for ETW session to fully release before spawning new PM
     this.cycleTimer = setTimeout(() => {
-      this.killExistingPM();
-      setTimeout(() => {
-        this.readCsvAndRestart();
-      }, 300);
-    }, this.cycleDuration);
+      if (!this.isMonitoring) return;
+
+      const pmProc = spawn(this.presentMonPath, args, {
+        windowsHide: true,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+
+      this.currentProcess = pmProc;
+
+      pmProc.on('error', (err) => {
+        this.log('PM error: ' + err.message);
+        if (this.isMonitoring) {
+          this.cycleTimer = setTimeout(() => this.runCycle(), 3000);
+        }
+      });
+
+      pmProc.on('close', (code) => {
+        this.currentProcess = null;
+      });
+
+      pmProc.unref();
+
+      this.cycleTimer = setTimeout(() => {
+        this.killPMAndCleanSession();
+        setTimeout(() => {
+          this.readCsvAndRestart();
+        }, 500);
+      }, this.cycleDuration);
+    }, 500);
   }
 
   private readCsvAndRestart(): void {
@@ -217,7 +245,7 @@ class FpsMonitor {
       this.currentProcess = null;
     }
 
-    this.killExistingPM();
+    this.killPMAndCleanSession();
 
     const csvPath = this.getCsvPath();
     try { fs.unlinkSync(csvPath); } catch {}
