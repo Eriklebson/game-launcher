@@ -309,6 +309,71 @@ function getUptime(): string {
   return `${hours}h ${mins}min`;
 }
 
+function getDiskStats(): Promise<{ name: string; usage: number; total: string; free: string }[]> {
+  return new Promise((resolve) => {
+    exec('powershell -NoProfile -Command "Get-CimInstance Win32_LogicalDisk -Filter \'DriveType=3\' | Select-Object DeviceID, @{N=\'SizeGB\';E={[math]::Round($_.Size/1GB,1)}}, @{N=\'FreeGB\';E={[math]::Round($_.FreeSpace/1GB,1)}} | ConvertTo-Json -Compress"', { timeout: 5000 }, (error, stdout) => {
+      if (error || !stdout?.trim()) { resolve([]); return; }
+      try {
+        let disks = JSON.parse(stdout.trim());
+        if (!Array.isArray(disks)) disks = [disks];
+        resolve(disks.map((d: any) => {
+          const total = d.SizeGB || 0;
+          const free = d.FreeGB || 0;
+          const used = total - free;
+          return {
+            name: d.DeviceID || '?',
+            usage: total > 0 ? Math.round((used / total) * 100) : 0,
+            total: total + ' GB',
+            free: free + ' GB',
+          };
+        }));
+      } catch { resolve([]); }
+    });
+  });
+}
+
+// Network speed tracking
+let lastNetReceived = 0;
+let lastNetSent = 0;
+let lastNetTime = Date.now();
+
+function getNetworkStats(): Promise<{ download: string; upload: string; downloadSpeed: number; uploadSpeed: number }> {
+  return new Promise((resolve) => {
+    exec('powershell -NoProfile -Command "$a = Get-NetAdapter | Where-Object {$_.Status -eq \'Up\'} | Select-Object -First 1; if ($a) { $s = Get-NetAdapterStatistics -Name $a.Name; @{up=[math]::Round($s.SentBytes);down=[math]::Round($s.ReceivedBytes)} } else { @{up=0;down=0} } | ConvertTo-Json -Compress"', { timeout: 5000 }, (error, stdout) => {
+      if (error || !stdout?.trim()) { resolve({ download: '0 B/s', upload: '0 B/s', downloadSpeed: 0, uploadSpeed: 0 }); return; }
+      try {
+        const data = JSON.parse(stdout.trim());
+        const now = Date.now();
+        const elapsed = (now - lastNetTime) / 1000;
+        if (elapsed > 0 && lastNetReceived > 0) {
+          const dlSpeed = Math.max(0, (data.down - lastNetReceived) / elapsed);
+          const ulSpeed = Math.max(0, (data.up - lastNetSent) / elapsed);
+          lastNetReceived = data.down;
+          lastNetSent = data.up;
+          lastNetTime = now;
+          resolve({
+            download: formatSpeed(dlSpeed),
+            upload: formatSpeed(ulSpeed),
+            downloadSpeed: dlSpeed,
+            uploadSpeed: ulSpeed,
+          });
+        } else {
+          lastNetReceived = data.down;
+          lastNetSent = data.up;
+          lastNetTime = now;
+          resolve({ download: '0 B/s', upload: '0 B/s', downloadSpeed: 0, uploadSpeed: 0 });
+        }
+      } catch { resolve({ download: '0 B/s', upload: '0 B/s', downloadSpeed: 0, uploadSpeed: 0 }); }
+    });
+  });
+}
+
+function formatSpeed(bytesPerSec: number): string {
+  if (bytesPerSec < 1024) return bytesPerSec.toFixed(0) + ' B/s';
+  if (bytesPerSec < 1024 * 1024) return (bytesPerSec / 1024).toFixed(1) + ' KB/s';
+  return (bytesPerSec / (1024 * 1024)).toFixed(1) + ' MB/s';
+}
+
 // Sensor cache - avoids spawning PowerShell every 2s
 interface FanData {
   name: string;
@@ -843,11 +908,13 @@ ipcMain.on('request-hardware-stats', async () => {
   const cpu = getCpuUsage();
   const ram = getRamStats();
 
-  // Run GPU, sensors, and game detection in parallel (don't block each other)
-  const [gpu, sensors, runningGame] = await Promise.all([
+  // Run GPU, sensors, disk, network and game detection in parallel
+  const [gpu, sensors, runningGame, disks, network] = await Promise.all([
     getGpuStats(),
     getSensors(),
     detectRunningGameProcess(),
+    getDiskStats(),
+    getNetworkStats(),
   ]);
   if (runningGame && runningGame !== lastDetectedGame) {
     console.log(`[FPS] Detected game: ${runningGame}`);
@@ -871,6 +938,8 @@ ipcMain.on('request-hardware-stats', async () => {
     },
     fans: sensors.fans,
     cpuPackageTemp: sensors.cpuPackageTemp || 0,
+    disk: disks,
+    network,
     fanControlRunning: true,
     cpuNeedsElevation: cpuTempNeedsElevation(),
     uptime: getUptime(),
