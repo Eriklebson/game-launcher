@@ -309,22 +309,25 @@ function getUptime(): string {
   return `${hours}h ${mins}min`;
 }
 
-function getDiskStats(): Promise<{ name: string; usage: number; total: string; free: string }[]> {
+function getDiskStats(): Promise<{ name: string; usage: number; total: string; free: string; readSpeed: string; writeSpeed: string }[]> {
   return new Promise((resolve) => {
-    exec('powershell -NoProfile -Command "Get-CimInstance Win32_LogicalDisk -Filter \'DriveType=3\' | Select-Object DeviceID, @{N=\'SizeGB\';E={[math]::Round($_.Size/1GB,1)}}, @{N=\'FreeGB\';E={[math]::Round($_.FreeSpace/1GB,1)}} | ConvertTo-Json -Compress"', { timeout: 5000 }, (error, stdout) => {
+    const cmd = `powershell -NoProfile -Command "$d = Get-CimInstance Win32_LogicalDisk -Filter 'DriveType=3'; $p = Get-CimInstance Win32_PerfFormattedData_PerfDisk_PhysicalDisk | Where-Object { $_.Name -ne '_Total' } | Select-Object -First 1; $r = @(); foreach ($disk in $d) { $read = if ($p) { $p.DiskReadBytesPersec } else { 0 }; $write = if ($p) { $p.DiskWriteBytesPersec } else { 0 }; $r += @{ id=$disk.DeviceID; total=[math]::Round($disk.Size/1GB,1); free=[math]::Round($disk.FreeSpace/1GB,1); read=$read; write=$write } }; $r | ConvertTo-Json -Compress"`;
+    exec(cmd, { timeout: 5000 }, (error, stdout) => {
       if (error || !stdout?.trim()) { resolve([]); return; }
       try {
         let disks = JSON.parse(stdout.trim());
         if (!Array.isArray(disks)) disks = [disks];
         resolve(disks.map((d: any) => {
-          const total = d.SizeGB || 0;
-          const free = d.FreeGB || 0;
+          const total = d.total || 0;
+          const free = d.free || 0;
           const used = total - free;
           return {
-            name: d.DeviceID || '?',
+            name: d.id || '?',
             usage: total > 0 ? Math.round((used / total) * 100) : 0,
             total: total + ' GB',
             free: free + ' GB',
+            readSpeed: formatSpeed(d.read || 0),
+            writeSpeed: formatSpeed(d.write || 0),
           };
         }));
       } catch { resolve([]); }
@@ -332,38 +335,18 @@ function getDiskStats(): Promise<{ name: string; usage: number; total: string; f
   });
 }
 
-// Network speed tracking
-let lastNetReceived = 0;
-let lastNetSent = 0;
-let lastNetTime = Date.now();
-
-function getNetworkStats(): Promise<{ download: string; upload: string; downloadSpeed: number; uploadSpeed: number }> {
+function getNetworkStats(): Promise<{ download: string; upload: string; adapter: string }> {
   return new Promise((resolve) => {
-    exec('powershell -NoProfile -Command "$a = Get-NetAdapter | Where-Object {$_.Status -eq \'Up\'} | Select-Object -First 1; if ($a) { $s = Get-NetAdapterStatistics -Name $a.Name; @{up=[math]::Round($s.SentBytes);down=[math]::Round($s.ReceivedBytes)} } else { @{up=0;down=0} } | ConvertTo-Json -Compress"', { timeout: 5000 }, (error, stdout) => {
-      if (error || !stdout?.trim()) { resolve({ download: '0 B/s', upload: '0 B/s', downloadSpeed: 0, uploadSpeed: 0 }); return; }
+    exec('powershell -NoProfile -Command "Get-CimInstance Win32_PerfFormattedData_Tcpip_NetworkInterface | Where-Object { $_.BytesReceivedPersec -gt 0 -or $_.BytesSentPersec -gt 0 } | Select-Object -First 1 | Select-Object @{N=\'down\';E={$_.BytesReceivedPersec}}, @{N=\'up\';E={$_.BytesSentPersec}}, @{N=\'adapter\';E={$_.Name}} | ConvertTo-Json -Compress"', { timeout: 5000 }, (error, stdout) => {
+      if (error || !stdout?.trim()) { resolve({ download: '0 B/s', upload: '0 B/s', adapter: '' }); return; }
       try {
         const data = JSON.parse(stdout.trim());
-        const now = Date.now();
-        const elapsed = (now - lastNetTime) / 1000;
-        if (elapsed > 0 && lastNetReceived > 0) {
-          const dlSpeed = Math.max(0, (data.down - lastNetReceived) / elapsed);
-          const ulSpeed = Math.max(0, (data.up - lastNetSent) / elapsed);
-          lastNetReceived = data.down;
-          lastNetSent = data.up;
-          lastNetTime = now;
-          resolve({
-            download: formatSpeed(dlSpeed),
-            upload: formatSpeed(ulSpeed),
-            downloadSpeed: dlSpeed,
-            uploadSpeed: ulSpeed,
-          });
-        } else {
-          lastNetReceived = data.down;
-          lastNetSent = data.up;
-          lastNetTime = now;
-          resolve({ download: '0 B/s', upload: '0 B/s', downloadSpeed: 0, uploadSpeed: 0 });
-        }
-      } catch { resolve({ download: '0 B/s', upload: '0 B/s', downloadSpeed: 0, uploadSpeed: 0 }); }
+        resolve({
+          download: formatSpeed(data.down || 0),
+          upload: formatSpeed(data.up || 0),
+          adapter: data.adapter || '',
+        });
+      } catch { resolve({ download: '0 B/s', upload: '0 B/s', adapter: '' }); }
     });
   });
 }
