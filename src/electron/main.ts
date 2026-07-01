@@ -219,6 +219,15 @@ function createMonitorWindow(): void {
   });
 }
 
+// Auto-resize monitor window to fit content
+ipcMain.on('resize-monitor', (_event, height: number) => {
+  if (monitorWindow && !monitorWindow.isDestroyed()) {
+    const [width] = monitorWindow.getSize();
+    const clampedHeight = Math.max(500, Math.min(900, height + 44)); // 32 titlebar + 12 padding
+    monitorWindow.setSize(width, clampedHeight);
+  }
+});
+
 // Hardware stats collection
 function getCpuUsage(): { usage: number; model: string; cores: number } {
   const cpus = os.cpus();

@@ -54,7 +54,6 @@
       padding: 12px;
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
-      grid-template-rows: auto auto auto;
       gap: 10px;
       min-height: calc(100vh - 32px);
       align-content: start;
@@ -161,11 +160,12 @@
       margin-top: 2px;
     }
     .fps-value {
-      font-size: 36px;
-      font-weight: 800;
+      font-size: 28px;
+      font-weight: 700;
       line-height: 1;
       margin-bottom: 2px;
       font-variant-numeric: tabular-nums;
+      color: #fff;
     }
     .fps-value.fps-good { color: #a4d007; }
     .fps-value.fps-ok { color: #cf6a32; }
@@ -297,31 +297,29 @@
     </div>
 
     <!-- FPS Card -->
-    <div class="card" style="grid-column: 3; grid-row: 1 / 3;">
+    <div class="card">
       <div class="card-header">
         <div class="card-icon fps">⚡</div>
         <span class="card-title">FPS</span>
       </div>
-      <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center;">
-        <div class="fps-value fps-na" id="fpsValue">N/A</div>
-        <div class="stat-label" id="fpsSource">Aguardando jogo...</div>
-        <div class="fps-labels" id="fpsLabels" style="display:none;">
-          <span class="fps-badge min">MIN <span id="fpsMin">--</span></span>
-          <span class="fps-badge avg">MÉDIA <span id="fpsAvg">--</span></span>
-          <span class="fps-badge max">MAX <span id="fpsMax">--</span></span>
+      <div class="stat-value fps-value" id="fpsValue">N/A</div>
+      <div class="stat-label" id="fpsSource">Aguardando jogo...</div>
+      <div class="fps-labels" id="fpsLabels" style="display:none;">
+        <span class="fps-badge min">MIN <span id="fpsMin">--</span></span>
+        <span class="fps-badge avg">MÉDIA <span id="fpsAvg">--</span></span>
+        <span class="fps-badge max">MAX <span id="fpsMax">--</span></span>
+      </div>
+      <div id="fpsHelp" style="margin-top: 8px; display: none;">
+        <div style="font-size: 9px; color: #8b9bb4; line-height: 1.4;">
+          Clique para iniciar
         </div>
-        <div id="fpsHelp" style="margin-top: 8px; text-align: center; display: none;">
-          <div style="font-size: 9px; color: #8b9bb4; line-height: 1.4; max-width: 140px;">
-            Clique abaixo para iniciar monitoramento FPS
-          </div>
-          <button id="fpsStartBtn" onclick="startFps()" style="
-            margin-top: 6px; padding: 4px 10px; font-size: 10px; font-weight: 600;
-            background: rgba(164,208,7,0.2); color: #a4d007; border: 1px solid rgba(164,208,7,0.3);
-            border-radius: 6px; cursor: pointer; transition: all 0.2s;
-          " onmouseover="this.style.background='rgba(164,208,7,0.35)'" onmouseout="this.style.background='rgba(164,208,7,0.2)'">
-            ▶ Iniciar FPS
-          </button>
-        </div>
+        <button id="fpsStartBtn" onclick="startFps()" style="
+          margin-top: 4px; padding: 3px 8px; font-size: 10px; font-weight: 600;
+          background: rgba(164,208,7,0.2); color: #a4d007; border: 1px solid rgba(164,208,7,0.3);
+          border-radius: 6px; cursor: pointer; transition: all 0.2s;
+        " onmouseover="this.style.background='rgba(164,208,7,0.35)'" onmouseout="this.style.background='rgba(164,208,7,0.2)'">
+          ▶ Iniciar FPS
+        </button>
       </div>
     </div>
 
@@ -571,16 +569,20 @@
 
       // Build fan items
       let html = '';
+      const pumpNames = ['Bomba WC', 'AIO', 'Pump', 'Water'];
       for (const fan of rpmFans) {
+        const isPump = pumpNames.some(p => fan.name.includes(p));
         const level = getFanLevel(fan.rpm);
         const speedClass = getFanSpeedClass(fan.rpm);
         const dutyText = fan.duty !== undefined ? `${fan.duty}%` : '';
+        const icon = isPump ? '💧' : '🌀';
+        const dutyLabel = isPump ? 'Pump' : '';
         html += `
           <div class="fan-item">
-            <div class="fan-icon spinning ${speedClass}">🌀</div>
+            <div class="fan-icon spinning ${speedClass}">${icon}</div>
             <div class="fan-rpm ${level}">${fan.rpm} RPM</div>
             <div class="fan-label">${fan.name}</div>
-            <div class="fan-duty">${dutyText}</div>
+            <div class="fan-duty">${dutyText}${dutyLabel ? ' · ' + dutyLabel : ''}</div>
           </div>`;
       }
 
@@ -603,6 +605,14 @@
     setInterval(() => {
       window.electronAPI.requestHardwareStats();
     }, 2000);
+
+    // Auto-resize window to fit content
+    function autoResize() {
+      const h = document.body.scrollHeight;
+      window.electronAPI.resizeMonitor(h);
+    }
+    window.addEventListener('load', () => setTimeout(autoResize, 500));
+    new MutationObserver(() => setTimeout(autoResize, 100)).observe(document.body, { childList: true, subtree: true });
 
     window.electronAPI.onHardwareStats((data) => {
       updateUI(data);

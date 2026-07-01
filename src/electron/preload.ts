@@ -34,4 +34,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   checkFpsAvailability: () => ipcRenderer.sendSync('check-fps-availability'),
   // CPU temp elevation
   elevateCpuTemp: () => ipcRenderer.invoke('elevate-cpu-temp'),
+  // Responsive window
+  resizeMonitor: (height: number) => ipcRenderer.send('resize-monitor', height),
 });
