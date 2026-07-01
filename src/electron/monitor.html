@@ -54,10 +54,11 @@
       padding: 12px;
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
-      grid-template-rows: auto auto;
+      grid-template-rows: auto auto auto;
       gap: 10px;
-      height: calc(100vh - 32px);
+      min-height: calc(100vh - 32px);
       align-content: start;
+      overflow-y: auto;
     }
     .card {
       background: rgba(30, 42, 58, 0.6);
@@ -87,6 +88,7 @@
     .card-icon.ram { background: rgba(192, 132, 252, 0.2); }
     .card-icon.temp { background: rgba(239, 68, 68, 0.2); }
     .card-icon.fps { background: rgba(164, 208, 7, 0.3); }
+    .card-icon.fan { background: rgba(96, 165, 250, 0.2); }
     .card-title {
       font-size: 11px;
       font-weight: 700;
@@ -191,6 +193,58 @@
       color: #8b9bb4;
       font-size: 12px;
       font-style: italic;
+    }
+    .fan-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .fan-item {
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+    }
+    .fan-icon {
+      font-size: 20px;
+      display: inline-block;
+      transition: transform 0.3s;
+    }
+    .fan-icon.spinning {
+      animation: spin 1s linear infinite;
+    }
+    .fan-icon.slow {
+      animation-duration: 2s;
+    }
+    .fan-icon.medium {
+      animation-duration: 1s;
+    }
+    .fan-icon.fast {
+      animation-duration: 0.5s;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .fan-rpm {
+      font-size: 16px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+    .fan-rpm.cool { color: #66c0f4; }
+    .fan-rpm.warm { color: #a4d007; }
+    .fan-rpm.hot { color: #cf6a32; }
+    .fan-rpm.danger { color: #d94126; }
+    .fan-label {
+      font-size: 9px;
+      color: #8b9bb4;
+      margin-top: 2px;
+    }
+    .fan-duty {
+      font-size: 10px;
+      color: #66c0f4;
+      margin-top: 2px;
     }
   </style>
 </head>
@@ -311,6 +365,20 @@
       </div>
       <div class="stat-label" style="margin-top: 8px; text-align: center;" id="tempStatus">Atualizando...</div>
     </div>
+
+    <!-- Fans Card -->
+    <div class="card full-width">
+      <div class="card-header">
+        <div class="card-icon fan">🌀</div>
+        <span class="card-title">Ventoinhas</span>
+      </div>
+      <div id="fansContainer">
+        <div class="fan-grid" id="fanGrid" style="display:none;"></div>
+        <div id="noFans" style="text-align:center; padding:8px;">
+          <div class="stat-label">Carregando ventoinhas...</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -425,6 +493,11 @@
           elevateBtn.style.display = 'none';
         }
       }
+
+      // Fans
+      if (data.fans !== undefined) {
+        updateFans(data.fans, data.fanControlRunning);
+      }
     }
 
     function setTemp(id, temp, label) {
@@ -459,6 +532,65 @@
       if (fps >= 60) return 'fps-good';
       if (fps >= 30) return 'fps-ok';
       return 'fps-bad';
+    }
+
+    function getFanLevel(rpm) {
+      if (rpm < 800) return 'cool';
+      if (rpm < 1500) return 'warm';
+      if (rpm < 2500) return 'hot';
+      return 'danger';
+    }
+
+    function getFanSpeedClass(rpm) {
+      if (rpm < 800) return 'slow';
+      if (rpm < 1500) return 'medium';
+      return 'fast';
+    }
+
+      function updateFans(fans, fanControlRunning) {
+      const fanGrid = document.getElementById('fanGrid');
+      const noFans = document.getElementById('noFans');
+
+      if (!fans || fans.length === 0) {
+        fanGrid.style.display = 'none';
+        noFans.style.display = 'block';
+        return;
+      }
+
+      fanGrid.style.display = 'grid';
+      noFans.style.display = 'none';
+
+      // Filter out duty-only entries and duplicates
+      const rpmFans = fans.filter(f => f.rpm > 0);
+      const dutyOnly = fans.filter(f => f.rpm === 0 && f.duty > 0);
+
+      // Build fan items
+      let html = '';
+      for (const fan of rpmFans) {
+        const level = getFanLevel(fan.rpm);
+        const speedClass = getFanSpeedClass(fan.rpm);
+        const dutyText = fan.duty !== undefined ? `${fan.duty}%` : '';
+        html += `
+          <div class="fan-item">
+            <div class="fan-icon spinning ${speedClass}">🌀</div>
+            <div class="fan-rpm ${level}">${fan.rpm} RPM</div>
+            <div class="fan-label">${fan.name}</div>
+            <div class="fan-duty">${dutyText}</div>
+          </div>`;
+      }
+
+      // Add duty-only items (no RPM sensor)
+      for (const duty of dutyOnly) {
+        html += `
+          <div class="fan-item">
+            <div class="fan-icon">⚙️</div>
+            <div class="fan-rpm" style="color:#66c0f4">${duty.duty}%</div>
+            <div class="fan-label">${duty.name}</div>
+            <div class="fan-duty">Duty Cycle</div>
+          </div>`;
+      }
+
+      fanGrid.innerHTML = html;
     }
 
     // Request data on load and every 2 seconds

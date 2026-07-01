@@ -85,14 +85,24 @@ if (fs.existsSync(lhmSrcDir)) {
   console.warn('LibreHardwareMonitor not found - CPU temp will be unavailable');
 }
 
-const readTempSrc = path.join(__dirname, '..', 'tools', 'read-temp.ps1');
-const readTempDest = path.join(outDir, 'tools', 'read-temp.ps1');
+const readTempSrc = path.join(__dirname, '..', 'tools', 'read-sensors.ps1');
+const readTempDest = path.join(outDir, 'tools', 'read-sensors.ps1');
 if (fs.existsSync(readTempSrc)) {
   if (!fs.existsSync(path.join(outDir, 'tools'))) {
     fs.mkdirSync(path.join(outDir, 'tools'), { recursive: true });
   }
   fs.copyFileSync(readTempSrc, readTempDest);
-  console.log('Copied read-temp.ps1');
+  console.log('Copied read-sensors.ps1');
+}
+
+const serviceSrc = path.join(__dirname, '..', 'tools', 'sensor-service.ps1');
+const serviceDest = path.join(outDir, 'tools', 'sensor-service.ps1');
+if (fs.existsSync(serviceSrc)) {
+  if (!fs.existsSync(path.join(outDir, 'tools'))) {
+    fs.mkdirSync(path.join(outDir, 'tools'), { recursive: true });
+  }
+  fs.copyFileSync(serviceSrc, serviceDest);
+  console.log('Copied sensor-service.ps1');
 }
 
 console.log('Electron files built successfully!');

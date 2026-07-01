@@ -1,6 +1,6 @@
 {
   "name": "game-launcher",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Personal game launcher",
   "main": "dist-electron/main.js",
   "scripts": {

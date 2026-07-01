@@ -24,9 +24,10 @@
 | 🖼️ **Detalhe do Jogo** | Screenshots, descrição, requisitos do sistema (via Steam Store API) |
 | 🏆 **Conquistas** | Sistema de conquistas via Steam API + parser Stellar Blade |
 | 🎵 **Som de Conquistas** | Notificação sonora estilo Steam (Web Audio API) |
-| 📊 **Monitor de Hardware** | CPU, GPU, RAM, Temperaturas e FPS em tempo real |
+| 📊 **Monitor de Hardware** | CPU, GPU, RAM, Temperaturas, Ventoinhas e FPS em tempo real |
 | ⚡ **FPS Monitor** | Intel PresentMon 2.5.1 — kill-read-restart cycle, sem necessidade de admin/UAC |
 | 🌡️ **Temperatura CPU** | LibreHardwareMonitorLib.dll — leitura direta via PowerShell (AMD/Intel/NVIDIA) |
+| 🌀 **Ventoinhas** | Mapeamento automático CPU Cooler, Bomba WC, Gabinete via Nuvoton NCT6798D |
 | 🛠️ **Mods & Tools** | Aba separada para ferramentas de modding |
 | 🎯 **Badge de Plataforma** | Identifica Steam, Epic, Xbox, GOG com cores específicas |
 | 📦 **100% Offline** | Banco de dados SQLite local, sem dependência de nuvem |
@@ -86,7 +87,8 @@ game-launcher/
 ├── tools/                     # Binários externos
 │   ├── PresentMon-2.5.1-x64.exe
 │   ├── LibreHardwareMonitor/  # DLL para leitura de sensores (CPU/GPU temp)
-│   └── read-temp.ps1          # Script PowerShell para leitura de temperatura
+│   ├── read-sensors.ps1       # Script fallback (GPU only, sem admin)
+│   └── sensor-service.ps1     # Serviço background (CPU+GPU+Motherboard fans, com admin)
 ├── scripts/                   # Scripts de build
 ├── docs/                      # Documentação
 └── package.json
@@ -136,6 +138,7 @@ Capas buscadas via **Steam Store API** (gratuita, sem autenticação).
 
 | Versão | Data | Mudança |
 |--------|------|---------|
+| 1.0.4 | 01/07/2026 | Ventoinhas mapeadas (CPU Cooler, Bomba WC, Gabinete), sensor service background sem UAC repetido, nomes friendly |
 | 1.0.3 | 01/07/2026 | Temperatura CPU via LibreHardwareMonitorLib (AMD/Intel), fix FPS ETW session leak, elevação UAC opcional |
 | 1.0.2 | 01/07/2026 | Monitor de Hardware (CPU/GPU/RAM/FPS) via Intel PresentMon sem UAC |
 | 1.0.1 | 30/06/2026 | Notificações de conquistas estilo Steam (sistema operacional) |

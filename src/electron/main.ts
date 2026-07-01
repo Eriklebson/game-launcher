@@ -194,10 +194,10 @@ function createMonitorWindow(): void {
   const preloadPath = path.join(__dirname, 'preload.js');
 
   monitorWindow = new BrowserWindow({
-    width: 520,
-    height: 480,
-    minWidth: 400,
-    minHeight: 420,
+    width: 560,
+    height: 700,
+    minWidth: 440,
+    minHeight: 500,
     frame: false,
     backgroundColor: '#0e1621',
     webPreferences: {
@@ -215,6 +215,7 @@ function createMonitorWindow(): void {
 
   monitorWindow.on('closed', () => {
     monitorWindow = null;
+    stopSensorService();
   });
 }
 
@@ -299,109 +300,171 @@ function getUptime(): string {
   return `${hours}h ${mins}min`;
 }
 
-// Temperature cache - avoids spawning PowerShell every 2s
-let tempCache: { cpu: number | null; gpu: number | null; cpuNeedsElevation: boolean } = { cpu: null, gpu: null, cpuNeedsElevation: false };
+// Sensor cache - avoids spawning PowerShell every 2s
+interface FanData {
+  name: string;
+  rpm: number;
+  duty?: number;
+  hardware?: string;
+}
+
+let sensorCache: { cpu: number | null; gpu: number | null; cpuNeedsElevation: boolean; fans: FanData[] } = {
+  cpu: null, gpu: null, cpuNeedsElevation: false, fans: []
+};
 let lastTempRead = 0;
 const TEMP_CACHE_MS = 4000;
 
-function getTempScriptPath(): string {
+let sensorServiceRunning = false;
+let sensorServiceProcess: any = null;
+
+function getSensorScriptPath(): string {
   return isDev
-    ? path.join(__dirname, '..', 'tools', 'read-temp.ps1')
-    : path.join(__dirname, 'tools', 'read-temp.ps1');
+    ? path.join(__dirname, '..', 'tools', 'read-sensors.ps1')
+    : path.join(__dirname, 'tools', 'read-sensors.ps1');
 }
 
-function getCpuTemp(): Promise<number | null> {
+function getSensorServicePath(): string {
+  return isDev
+    ? path.join(__dirname, '..', 'tools', 'sensor-service.ps1')
+    : path.join(__dirname, 'tools', 'sensor-service.ps1');
+}
+
+function getStopFilePath(): string {
+  return path.join(os.tmpdir(), 'lhm-sensor-service.stop');
+}
+
+function getCacheFilePath(): string {
+  return path.join(os.tmpdir(), 'lhm-sensors-cache.json');
+}
+
+// Start the background sensor service (elevated, runs until stopped)
+function startSensorService(): void {
+  if (sensorServiceRunning) return;
+
+  const servicePath = getSensorServicePath();
+  if (!fs.existsSync(servicePath)) return;
+
+  // Remove old stop file
+  const stopFile = getStopFilePath();
+  if (fs.existsSync(stopFile)) fs.unlinkSync(stopFile);
+
+  // Launch elevated background process (UAC once)
+  const psCommand = `Start-Process powershell -ArgumentList '-ExecutionPolicy Bypass -NoProfile -WindowStyle Hidden -File "${servicePath}"' -Verb RunAs -WindowStyle Hidden`;
+  const child = exec(`powershell -Command "${psCommand.replace(/"/g, '\\"')}"`, { timeout: 10000 }, (error) => {
+    if (!error) {
+      sensorServiceRunning = true;
+      console.log('[Sensors] Background service started');
+    }
+  });
+  sensorServiceProcess = child;
+}
+
+// Stop the background sensor service
+function stopSensorService(): void {
+  if (!sensorServiceRunning) return;
+
+  const stopFile = getStopFilePath();
+  fs.writeFileSync(stopFile, 'stop', 'utf-8');
+  sensorServiceRunning = false;
+  sensorServiceProcess = null;
+  console.log('[Sensors] Background service stopped');
+}
+
+function getSensors(): Promise<{ cpu: number | null; fans: FanData[] }> {
   return new Promise((resolve) => {
     const now = Date.now();
-    if (tempCache.cpu !== null && now - lastTempRead < TEMP_CACHE_MS) {
-      resolve(tempCache.cpu);
+    if (sensorCache.cpu !== null && now - lastTempRead < TEMP_CACHE_MS) {
+      resolve({ cpu: sensorCache.cpu, fans: sensorCache.fans });
       return;
     }
 
-    const scriptPath = getTempScriptPath();
+    // Start background service on first call
+    if (!sensorServiceRunning) {
+      startSensorService();
+      // Give service a moment to start and write first data
+      setTimeout(() => {
+        readSensorsFromCache().then(resolve);
+      }, 2000);
+      return;
+    }
+
+    readSensorsFromCache().then(resolve);
+  });
+}
+
+function readSensorsFromCache(): Promise<{ cpu: number | null; fans: FanData[] }> {
+  return new Promise((resolve) => {
+    const cacheFile = getCacheFilePath();
+
+    // Try to read from cache (written by background service)
+    if (fs.existsSync(cacheFile)) {
+      try {
+        const raw = fs.readFileSync(cacheFile, 'utf-8').trim();
+        const data = JSON.parse(raw);
+        lastTempRead = Date.now();
+
+        if (data.cpu?.temp > 0) {
+          sensorCache.cpu = data.cpu.temp;
+          sensorCache.cpuNeedsElevation = false;
+        }
+        if (data.gpu?.temp > 0) {
+          sensorCache.gpu = data.gpu.temp;
+        }
+        if (Array.isArray(data.fans)) {
+          sensorCache.fans = data.fans.map((f: any) => ({
+            name: f.name,
+            rpm: f.rpm || 0,
+            duty: f.duty,
+            hardware: f.hardware,
+          }));
+        }
+        resolve({ cpu: sensorCache.cpu, fans: sensorCache.fans });
+        return;
+      } catch {}
+    }
+
+    // Fallback: direct read (GPU only, no admin needed)
+    const scriptPath = getSensorScriptPath();
     if (!fs.existsSync(scriptPath)) {
-      resolve(tempCache.cpu);
+      resolve({ cpu: sensorCache.cpu, fans: sensorCache.fans });
       return;
     }
 
     exec(`powershell -ExecutionPolicy Bypass -NoProfile -File "${scriptPath}"`, { timeout: 5000 }, (error, stdout) => {
       if (error || !stdout?.trim()) {
-        resolve(tempCache.cpu);
+        resolve({ cpu: sensorCache.cpu, fans: sensorCache.fans });
         return;
       }
-
       try {
         const data = JSON.parse(stdout.trim());
         lastTempRead = now;
-
-        // New format: { cpu: { name, temp }, gpu: { name, temp } }
-        if (data.cpu?.temp > 0) {
-          tempCache.cpu = data.cpu.temp;
-          tempCache.cpuNeedsElevation = false;
-        } else if (data.cpu === null || data.cpu?.temp === 0) {
-          tempCache.cpu = null;
-          tempCache.cpuNeedsElevation = true;
+        if (data.cpu?.temp > 0) sensorCache.cpu = data.cpu.temp;
+        if (data.gpu?.temp > 0) sensorCache.gpu = data.gpu.temp;
+        if (Array.isArray(data.fans)) {
+          sensorCache.fans = data.fans.map((f: any) => ({
+            name: f.name, rpm: f.rpm || 0, duty: f.duty, hardware: f.hardware,
+          }));
         }
-
-        // GPU from LHM as backup (nvidia-smi is primary)
-        if (data.gpu?.temp > 0) {
-          tempCache.gpu = data.gpu.temp;
-        }
-
-        resolve(tempCache.cpu);
+        resolve({ cpu: sensorCache.cpu, fans: sensorCache.fans });
       } catch {
-        resolve(tempCache.cpu);
+        resolve({ cpu: sensorCache.cpu, fans: sensorCache.fans });
       }
     });
   });
 }
 
 function getGpuTempFromLHM(): number | null {
-  return tempCache.gpu;
+  return sensorCache.gpu;
 }
 
 function cpuTempNeedsElevation(): boolean {
-  return tempCache.cpuNeedsElevation;
+  return sensorCache.cpuNeedsElevation;
 }
 
 function elevateCpuTemp(): Promise<boolean> {
+  startSensorService();
   return new Promise((resolve) => {
-    const scriptPath = getTempScriptPath();
-    if (!fs.existsSync(scriptPath)) {
-      resolve(false);
-      return;
-    }
-
-    // Run script elevated with -Elevated flag (writes to temp file)
-    const psCommand = `Start-Process powershell -ArgumentList '-ExecutionPolicy Bypass -NoProfile -File "${scriptPath}" -Elevated' -Verb RunAs -Wait -WindowStyle Hidden`;
-    exec(`powershell -Command "${psCommand.replace(/"/g, '\\"')}"`, { timeout: 15000 }, (error) => {
-      if (error) {
-        resolve(false);
-        return;
-      }
-
-      // Now read the result (script wrote to cache file)
-      exec(`powershell -ExecutionPolicy Bypass -NoProfile -File "${scriptPath}"`, { timeout: 5000 }, (error2, stdout) => {
-        if (error2 || !stdout?.trim()) {
-          resolve(false);
-          return;
-        }
-
-        try {
-          const data = JSON.parse(stdout.trim());
-          if (data.cpu?.temp > 0) {
-            tempCache.cpu = data.cpu.temp;
-            tempCache.cpuNeedsElevation = false;
-            lastTempRead = Date.now();
-            resolve(true);
-          } else {
-            resolve(false);
-          }
-        } catch {
-          resolve(false);
-        }
-      });
-    });
+    setTimeout(() => resolve(true), 2000);
   });
 }
 
@@ -765,10 +828,10 @@ ipcMain.on('request-hardware-stats', async () => {
   const cpu = getCpuUsage();
   const ram = getRamStats();
 
-  // Run GPU, CPU temp, and game detection in parallel (don't block each other)
-  const [gpu, cpuTemp, runningGame] = await Promise.all([
+  // Run GPU, sensors, and game detection in parallel (don't block each other)
+  const [gpu, sensors, runningGame] = await Promise.all([
     getGpuStats(),
-    getCpuTemp(),
+    getSensors(),
     detectRunningGameProcess(),
   ]);
   if (runningGame && runningGame !== lastDetectedGame) {
@@ -788,9 +851,11 @@ ipcMain.on('request-hardware-stats', async () => {
     gpu,
     ram,
     temps: {
-      cpu: cpuTemp,
+      cpu: sensors.cpu,
       gpu: gpu.temp || getGpuTempFromLHM(),
     },
+    fans: sensors.fans,
+    fanControlRunning: true,
     cpuNeedsElevation: cpuTempNeedsElevation(),
     uptime: getUptime(),
     fps: fpsData.current,
