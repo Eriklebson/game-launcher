@@ -308,11 +308,11 @@ interface FanData {
   hardware?: string;
 }
 
-let sensorCache: { cpu: number | null; gpu: number | null; cpuNeedsElevation: boolean; fans: FanData[] } = {
-  cpu: null, gpu: null, cpuNeedsElevation: false, fans: []
+let sensorCache: { cpu: number | null; cpuPackageTemp: number | null; gpu: number | null; cpuNeedsElevation: boolean; fans: FanData[] } = {
+  cpu: null, cpuPackageTemp: null, gpu: null, cpuNeedsElevation: false, fans: []
 };
 let lastTempRead = 0;
-const TEMP_CACHE_MS = 4000;
+const TEMP_CACHE_MS = 1500;
 
 let sensorServiceRunning = false;
 let sensorServiceProcess: any = null;
@@ -403,10 +403,14 @@ function readSensorsFromCache(): Promise<{ cpu: number | null; fans: FanData[] }
         const data = JSON.parse(raw);
         lastTempRead = Date.now();
 
-        if (data.cpu?.temp > 0) {
-          sensorCache.cpu = data.cpu.temp;
-          sensorCache.cpuPackageTemp = data.cpu.packageTemp || 0;
-          sensorCache.cpuNeedsElevation = false;
+        if (data.cpu) {
+          if (data.cpu.temp > 0) {
+            sensorCache.cpu = data.cpu.temp;
+            sensorCache.cpuNeedsElevation = false;
+          }
+          if (data.cpu.packageTemp > 0) {
+            sensorCache.cpuPackageTemp = data.cpu.packageTemp;
+          }
         }
         if (data.gpu?.temp > 0) {
           sensorCache.gpu = data.gpu.temp;
@@ -439,8 +443,8 @@ function readSensorsFromCache(): Promise<{ cpu: number | null; fans: FanData[] }
       try {
         const data = JSON.parse(stdout.trim());
         lastTempRead = now;
-        if (data.cpu?.temp > 0) sensorCache.cpu = data.cpu.temp;
-        if (data.cpu?.packageTemp > 0) sensorCache.cpuPackageTemp = data.cpu.packageTemp;
+        // Fallback ONLY updates GPU - CPU temps require elevated service
+        // (read-sensors.ps1 can't distinguish CCD vs Package without admin)
         if (data.gpu?.temp > 0) sensorCache.gpu = data.gpu.temp;
         if (Array.isArray(data.fans)) {
           sensorCache.fans = data.fans.map((f: any) => ({
