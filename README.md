@@ -22,7 +22,10 @@
 | 🎨 **Biblioteca Visual** | Grid ou lista com capas, busca e filtros por plataforma |
 | ⏱️ **Play Time Tracking** | Registra tempo de jogo por sessão automaticamente |
 | 🖼️ **Detalhe do Jogo** | Screenshots, descrição, requisitos do sistema (via Steam Store API) |
-| 🏆 **Conquistas** | Sistema de conquistas via banco de dados local |
+| 🏆 **Conquistas** | Sistema de conquistas via Steam API + parser Stellar Blade |
+| 🎵 **Som de Conquistas** | Notificação sonora estilo Steam (Web Audio API) |
+| 📊 **Monitor de Hardware** | CPU, GPU, RAM, Temperaturas e FPS em tempo real |
+| ⚡ **FPS Monitor** | Intel PresentMon 2.5.1 — sem necessidade de admin/UAC |
 | 🛠️ **Mods & Tools** | Aba separada para ferramentas de modding |
 | 🎯 **Badge de Plataforma** | Identifica Steam, Epic, Xbox, GOG com cores específicas |
 | 📦 **100% Offline** | Banco de dados SQLite local, sem dependência de nuvem |
@@ -70,12 +73,16 @@ game-launcher/
 │   │   ├── main.ts            # Entry point, janela, IPC, DB
 │   │   ├── preload.ts         # Context bridge
 │   │   ├── database.ts        # SQLite CRUD
+│   │   ├── fpsMonitor.ts      # FPS monitor via PresentMon
+│   │   ├── monitor.html       # Monitor de Hardware (janela separada)
+│   │   ├── notification.html  # Notificação de conquistas
 │   │   └── gameScanner.ts     # Scanner multi-plataforma
 │   ├── ui/                    # Renderer process (React)
 │   │   ├── App.tsx            # Roteamento principal
 │   │   ├── components/        # Componentes reutilizáveis
 │   │   └── pages/             # Páginas da aplicação
 │   └── types/                 # Interfaces TypeScript
+├── tools/                     # Binários externos (PresentMon)
 ├── scripts/                   # Scripts de build
 ├── docs/                      # Documentação
 └── package.json
@@ -125,6 +132,7 @@ Capas buscadas via **Steam Store API** (gratuita, sem autenticação).
 
 | Versão | Data | Mudança |
 |--------|------|---------|
+| 1.0.2 | 01/07/2026 | Monitor de Hardware (CPU/GPU/RAM/FPS) via Intel PresentMon sem UAC |
 | 1.0.1 | 30/06/2026 | Notificações de conquistas estilo Steam (sistema operacional) |
 | 1.0.0 | 30/06/2026 | Release inicial |
 
