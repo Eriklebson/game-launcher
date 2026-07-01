@@ -374,7 +374,7 @@ function getSensors(): Promise<{ cpu: number | null; fans: FanData[] }> {
   return new Promise((resolve) => {
     const now = Date.now();
     if (sensorCache.cpu !== null && now - lastTempRead < TEMP_CACHE_MS) {
-      resolve({ cpu: sensorCache.cpu, fans: sensorCache.fans });
+      resolve({ cpu: sensorCache.cpu, cpuPackageTemp: sensorCache.cpuPackageTemp, fans: sensorCache.fans });
       return;
     }
 
@@ -405,6 +405,7 @@ function readSensorsFromCache(): Promise<{ cpu: number | null; fans: FanData[] }
 
         if (data.cpu?.temp > 0) {
           sensorCache.cpu = data.cpu.temp;
+          sensorCache.cpuPackageTemp = data.cpu.packageTemp || 0;
           sensorCache.cpuNeedsElevation = false;
         }
         if (data.gpu?.temp > 0) {
@@ -418,7 +419,7 @@ function readSensorsFromCache(): Promise<{ cpu: number | null; fans: FanData[] }
             hardware: f.hardware,
           }));
         }
-        resolve({ cpu: sensorCache.cpu, fans: sensorCache.fans });
+        resolve({ cpu: sensorCache.cpu, cpuPackageTemp: sensorCache.cpuPackageTemp, fans: sensorCache.fans });
         return;
       } catch {}
     }
@@ -426,28 +427,29 @@ function readSensorsFromCache(): Promise<{ cpu: number | null; fans: FanData[] }
     // Fallback: direct read (GPU only, no admin needed)
     const scriptPath = getSensorScriptPath();
     if (!fs.existsSync(scriptPath)) {
-      resolve({ cpu: sensorCache.cpu, fans: sensorCache.fans });
+      resolve({ cpu: sensorCache.cpu, cpuPackageTemp: sensorCache.cpuPackageTemp, fans: sensorCache.fans });
       return;
     }
 
     exec(`powershell -ExecutionPolicy Bypass -NoProfile -File "${scriptPath}"`, { timeout: 5000 }, (error, stdout) => {
       if (error || !stdout?.trim()) {
-        resolve({ cpu: sensorCache.cpu, fans: sensorCache.fans });
+        resolve({ cpu: sensorCache.cpu, cpuPackageTemp: sensorCache.cpuPackageTemp, fans: sensorCache.fans });
         return;
       }
       try {
         const data = JSON.parse(stdout.trim());
         lastTempRead = now;
         if (data.cpu?.temp > 0) sensorCache.cpu = data.cpu.temp;
+        if (data.cpu?.packageTemp > 0) sensorCache.cpuPackageTemp = data.cpu.packageTemp;
         if (data.gpu?.temp > 0) sensorCache.gpu = data.gpu.temp;
         if (Array.isArray(data.fans)) {
           sensorCache.fans = data.fans.map((f: any) => ({
             name: f.name, rpm: f.rpm || 0, duty: f.duty, hardware: f.hardware,
           }));
         }
-        resolve({ cpu: sensorCache.cpu, fans: sensorCache.fans });
+        resolve({ cpu: sensorCache.cpu, cpuPackageTemp: sensorCache.cpuPackageTemp, fans: sensorCache.fans });
       } catch {
-        resolve({ cpu: sensorCache.cpu, fans: sensorCache.fans });
+        resolve({ cpu: sensorCache.cpu, cpuPackageTemp: sensorCache.cpuPackageTemp, fans: sensorCache.fans });
       }
     });
   });
@@ -855,6 +857,7 @@ ipcMain.on('request-hardware-stats', async () => {
       gpu: gpu.temp || getGpuTempFromLHM(),
     },
     fans: sensors.fans,
+    cpuPackageTemp: sensors.cpuPackageTemp || 0,
     fanControlRunning: true,
     cpuNeedsElevation: cpuTempNeedsElevation(),
     uptime: getUptime(),

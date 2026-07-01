@@ -137,7 +137,7 @@
     }
     .temp-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 8px;
       margin-top: 8px;
     }
@@ -359,6 +359,10 @@
           </div>
         </div>
         <div class="temp-item">
+          <div class="temp-value" id="cpuPackageTemp">--°</div>
+          <div class="temp-label">CPU Package</div>
+        </div>
+        <div class="temp-item">
           <div class="temp-value" id="gpuTemp">--°</div>
           <div class="temp-label">GPU</div>
         </div>
@@ -482,6 +486,7 @@
       // Temperature
       if (data.temps) {
         setTemp('cpuTemp', data.temps.cpu, 'CPU');
+        setTemp('cpuPackageTemp', data.cpuPackageTemp, 'CPU Package');
         setTemp('gpuTemp', data.temps.gpu, 'GPU');
         document.getElementById('tempStatus').textContent = 'Tempo ativo: ' + (data.uptime || '--');
 
